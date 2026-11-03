@@ -1,13 +1,71 @@
 
-const pseudoInput = document.getElementById("pseudo");
-const button = document.getElementById("searchBtn");
+const home = document.getElementById("home");
+const searchPage = document.getElementById("searchPage");
+
+const pseudoChoice = document.getElementById("pseudoChoice");
+const generalChoice = document.getElementById("generalChoice");
+const backBtn = document.getElementById("backBtn");
+
+const searchInput = document.getElementById("searchInput");
+const searchBtn = document.getElementById("searchBtn");
 const statusText = document.getElementById("status");
 const resultsBox = document.getElementById("results");
 
-button.addEventListener("click", searchPseudo);
+let currentMode = "pseudo";
 
-pseudoInput.addEventListener("keydown", event => {
-    if (event.key === "Enter") searchPseudo();
+pseudoChoice.addEventListener("click", () => {
+    openSearch("pseudo");
+});
+
+generalChoice.addEventListener("click", () => {
+    openSearch("general");
+});
+
+backBtn.addEventListener("click", () => {
+    home.classList.remove("hidden");
+    searchPage.classList.add("hidden");
+    searchInput.value = "";
+    resultsBox.innerHTML = "";
+    statusText.textContent = "En attente d'une recherche...";
+    updateStats(0, 0, 0);
+    document.getElementById("progressBar").style.width = "0%";
+});
+
+function openSearch(mode) {
+    currentMode = mode;
+
+    home.classList.add("hidden");
+    searchPage.classList.remove("hidden");
+
+    if (mode === "pseudo") {
+        document.getElementById("searchTitle").textContent =
+            "Recherche de pseudo";
+
+        document.getElementById("searchDescription").textContent =
+            "Recherche des profils et mentions sur les réseaux sociaux.";
+
+        searchInput.placeholder = "Entre un pseudo...";
+        document.getElementById("resultsTitle").textContent =
+            "RÉSULTATS DES PROFILS";
+    } else {
+        document.getElementById("searchTitle").textContent =
+            "Recherche générale";
+
+        document.getElementById("searchDescription").textContent =
+            "Recherche un sujet sur plusieurs plateformes en même temps.";
+
+        searchInput.placeholder = "Ex : Rocket League, actualité...";
+        document.getElementById("resultsTitle").textContent =
+            "RÉSULTATS DE RECHERCHE";
+    }
+
+    searchInput.focus();
+}
+
+searchBtn.addEventListener("click", search);
+
+searchInput.addEventListener("keydown", event => {
+    if (event.key === "Enter") search();
 });
 
 function updateStats(total, found, checked) {
@@ -25,23 +83,20 @@ function createElement(tag, className, content) {
     return element;
 }
 
-async function searchPseudo() {
-    const pseudo = pseudoInput.value.trim();
+async function search() {
+    const query = searchInput.value.trim();
 
-    if (!/^[a-zA-Z0-9_.-]{2,50}$/.test(pseudo)) {
-        statusText.textContent = "Pseudo invalide.";
+    if (query.length < 2) {
+        statusText.textContent = "Entre au moins 2 caractères.";
         return;
     }
 
-    button.disabled = true;
+    searchBtn.disabled = true;
     resultsBox.innerHTML = "";
-
     updateStats(0, 0, 0);
 
     document.getElementById("progressBar").style.width = "0%";
-
-    statusText.textContent =
-        "Recherche sur 11 plateformes...";
+    statusText.textContent = "Recherche en cours...";
 
     try {
         const response = await fetch("/api/search", {
@@ -49,7 +104,10 @@ async function searchPseudo() {
             headers: {
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify({ pseudo })
+            body: JSON.stringify({
+                query,
+                mode: currentMode
+            })
         });
 
         const data = await response.json();
@@ -62,10 +120,8 @@ async function searchPseudo() {
 
     } catch (error) {
         statusText.textContent = error.message;
-        updateStats(0, 0, 0);
-
     } finally {
-        button.disabled = false;
+        searchBtn.disabled = false;
     }
 }
 
@@ -86,23 +142,18 @@ function displayResults(data) {
         if (platform.results.length > 0) found++;
 
         const card = createElement("article", "platform-card");
-
         const header = createElement("div", "platform-header");
 
-        const name = createElement(
-            "strong",
-            "",
-            platform.name
-        );
+        const name = createElement("strong", "", platform.name);
 
-        let badgeText = "Aucun résultat indexé";
+        let badgeText = "Aucun résultat";
         let badgeClass = "status-empty";
 
         if (platform.status === "error") {
             badgeText = "Erreur de recherche";
             badgeClass = "status-error";
-        } else if (platform.status === "results") {
-            badgeText = "Résultats à vérifier";
+        } else if (platform.results.length > 0) {
+            badgeText = platform.results.length + " résultat(s)";
             badgeClass = "status-found";
         }
 
@@ -115,13 +166,9 @@ function displayResults(data) {
         header.append(name, badge);
         card.appendChild(header);
 
-        if (platform.status === "error") {
+        if (platform.error) {
             card.appendChild(
-                createElement(
-                    "p",
-                    "platform-message",
-                    platform.error || "Recherche impossible."
-                )
+                createElement("p", "platform-message", platform.error)
             );
         }
 
@@ -143,12 +190,15 @@ function displayResults(data) {
             const match = createElement(
                 "small",
                 result.possibleMatch ? "match-possible" : "match-unknown",
-                result.possibleMatch
-                    ? "Pseudo repéré dans la page"
-                    : "Correspondance à vérifier"
+                result.type || (
+                    result.possibleMatch
+                        ? "Profil possible"
+                        : "Résultat à vérifier"
+                )
             );
 
             const link = createElement("a", "", "OUVRIR ↗");
+
             link.href = result.url;
             link.target = "_blank";
             link.rel = "noopener noreferrer";
@@ -165,5 +215,5 @@ function displayResults(data) {
     document.getElementById("progressBar").style.width = "100%";
 
     statusText.textContent =
-        `${total} page(s) trouvée(s) sur ${checked} plateformes vérifiées.`;
+        `${total} résultat(s) trouvé(s) sur ${checked} plateformes vérifiées.`;
 }
