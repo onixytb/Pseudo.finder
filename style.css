@@ -372,3 +372,22 @@ h3 {
         font-size: 9px;
     }
 }
+
+#osintResults .platform-card {
+    margin-top: 15px;
+}
+
+#osintResults .result-item {
+    overflow-wrap: anywhere;
+}
+
+#osintResults .result-item a {
+    padding: 8px 0;
+}
+
+.osint-source {
+    color: #35e69a;
+    font-size: 11px;
+    margin-top: 8px;
+}
+
