@@ -265,3 +265,106 @@ document.getElementById("bluetoothBtn").addEventListener("click", async () => {
         button.disabled = false;
     }
 });
+
+const osintPage = document.getElementById("osintPage");
+
+document.getElementById("osintChoice").addEventListener("click", () => {
+    showPage(osintPage);
+});
+
+document.getElementById("osintBackBtn").addEventListener("click", () => {
+    showPage(home);
+});
+
+document.getElementById("osintBtn").addEventListener("click", runOsint);
+
+async function runOsint() {
+    const first = document.getElementById("osintFirst").value.trim();
+    const last = document.getElementById("osintLast").value.trim();
+
+    const button = document.getElementById("osintBtn");
+    const status = document.getElementById("osintStatus");
+    const output = document.getElementById("osintResults");
+
+    if (!first || !last) {
+        status.textContent = "Entre un nom et un prénom.";
+        return;
+    }
+
+    button.disabled = true;
+    output.innerHTML = "";
+    status.textContent = "Recherche des sources publiques...";
+
+    try {
+        const response = await fetch("/api/osint", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ first, last })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || "Erreur serveur.");
+        }
+
+        data.groups.forEach(group => {
+            const card = createElement("article", "platform-card");
+            const header = createElement("div", "platform-header");
+            const title = createElement("strong", "", group.category);
+
+            const badge = createElement(
+                "span",
+                "status-badge status-found",
+                group.results.length + " résultat(s)"
+            );
+
+            header.append(title, badge);
+            card.appendChild(header);
+
+            if (group.error) {
+                card.appendChild(
+                    createElement("p", "platform-message", group.error)
+                );
+            }
+
+            group.results.forEach(item => {
+                const result = createElement("div", "result-item");
+
+                result.appendChild(
+                    createElement("strong", "", item.title)
+                );
+
+                result.appendChild(
+                    createElement("p", "", item.description)
+                );
+
+                const link = createElement("a", "", "CONSULTER LA SOURCE ↗");
+                link.href = item.url;
+                link.target = "_blank";
+                link.rel = "noopener noreferrer";
+
+                result.appendChild(link);
+                card.appendChild(result);
+            });
+
+            if (!group.results.length && !group.error) {
+                card.appendChild(
+                    createElement("p", "subtitle", "Aucune source trouvée.")
+                );
+            }
+
+            output.appendChild(card);
+        });
+
+        status.textContent =
+            data.total + " source(s) publique(s) trouvée(s).";
+
+    } catch (error) {
+        status.textContent = error.message;
+    } finally {
+        button.disabled = false;
+    }
+}
