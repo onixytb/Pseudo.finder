@@ -1,14 +1,32 @@
-
 const express = require("express");
 const path = require("path");
 
 const app = express();
 
 app.use(express.json({ limit: "10kb" }));
-app.use(express.static(path.join(__dirname, "public")));
 
-const API_KEY = process.env.GOOGLE_API_KEY;
-const SEARCH_ENGINE_ID = process.env.GOOGLE_CX;
+// Afficher le site
+app.use(express.static(__dirname));
+
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "index.html"));
+});
+
+const API_KEY = process.env.SERPAPI_KEY;
+
+const allowedSites = [
+    "instagram.com",
+    "tiktok.com",
+    "youtube.com",
+    "reddit.com",
+    "github.com",
+    "twitch.tv",
+    "pinterest.com",
+    "x.com",
+    "facebook.com",
+    "roblox.com",
+    "steamcommunity.com"
+];
 
 app.post("/api/search", async (req, res) => {
     try {
@@ -20,50 +38,62 @@ app.post("/api/search", async (req, res) => {
             });
         }
 
-        if (!API_KEY || !SEARCH_ENGINE_ID) {
+        if (!API_KEY) {
             return res.status(500).json({
-                error: "Clés API non configurées."
+                error: "Clé SerpApi manquante."
             });
         }
 
-        const query = `"${pseudo}"`;
+        const query = `"${pseudo}" (` +
+            allowedSites.map(s => `site:${s}`).join(" OR ") + ")";
 
         const params = new URLSearchParams({
-            key: API_KEY,
-            cx: SEARCH_ENGINE_ID,
+            engine: "google",
             q: query,
-            num: "10"
+            api_key: API_KEY,
+            gl: "fr",
+            hl: "fr",
+            safe: "active"
         });
 
         const response = await fetch(
-            "https://www.googleapis.com/customsearch/v1?" +
-            params.toString()
+            "https://serpapi.com/search.json?" + params
         );
-
-        if (!response.ok) {
-            return res.status(502).json({
-                error: "Le moteur de recherche a refusé la requête."
-            });
-        }
 
         const data = await response.json();
 
-        const results = (data.items || []).map(item => ({
-            title: item.title,
-            description: item.snippet,
-            url: item.link
-        }));
+        if (!response.ok || data.error) {
+            return res.status(502).json({
+                error: data.error || "Erreur API."
+            });
+        }
 
-        res.json({
-            pseudo,
-            results
-        });
+        const results = (data.organic_results || [])
+            .filter(item => {
+                try {
+                    const host = new URL(item.link).hostname
+                        .replace(/^www\./, "");
+
+                    return allowedSites.some(site =>
+                        host === site || host.endsWith("." + site)
+                    );
+                } catch {
+                    return false;
+                }
+            })
+            .map(item => ({
+                title: item.title,
+                description: item.snippet,
+                url: item.link
+            }));
+
+        res.json({ pseudo, results });
 
     } catch (error) {
         console.error(error);
 
         res.status(500).json({
-            error: "Erreur pendant la recherche."
+            error: "Erreur serveur."
         });
     }
 });
@@ -71,5 +101,5 @@ app.post("/api/search", async (req, res) => {
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-    console.log("PSEUDO.FINDER actif sur le port " + PORT);
+    console.log("PSEUDO.FINDER V3 démarré !");
 });
