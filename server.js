@@ -35,42 +35,72 @@ function normalize(value) {
         .replace(/[^a-z0-9]/g, "");
 }
 
-function isProfile(platform, url, query) {
+function isProfile(platform, url, pseudo) {
     const parts = url.pathname.split("/").filter(Boolean);
-    const wanted = normalize(query);
+    const wanted = normalize(pseudo);
 
     if (!parts.length) return false;
 
     const first = normalize(parts[0]);
+    const second = normalize(parts[1] || "");
 
     switch (platform) {
         case "Instagram":
-        case "Twitch":
-        case "GitHub":
-        case "X / Twitter":
-        case "Pinterest":
-        case "Facebook":
-            return parts.length === 1 && first === wanted;
+            return parts.length === 1 &&
+                first === wanted;
 
         case "TikTok":
-            return parts[0].startsWith("@") && first === wanted;
+            return parts.length === 1 &&
+                parts[0].startsWith("@") &&
+                first === wanted;
 
         case "YouTube":
-            return parts[0].startsWith("@") && first === wanted;
+            return parts.length === 1 &&
+                parts[0].startsWith("@") &&
+                first === wanted;
 
         case "Reddit":
-            return parts.length >= 2 &&
+            return parts.length === 2 &&
                 ["user", "u"].includes(parts[0].toLowerCase()) &&
-                normalize(parts[1]) === wanted;
+                second === wanted;
 
-        case "Roblox":
-            return parts.length >= 3 &&
-                parts[0] === "users" &&
-                parts[2] === "profile";
+        case "X / Twitter":
+            return parts.length === 1 &&
+                first === wanted &&
+                !["home", "explore", "search", "settings"].includes(first);
+
+        case "Twitch":
+            return parts.length === 1 &&
+                first === wanted &&
+                !["directory", "videos", "downloads"].includes(first);
+
+        case "GitHub":
+            return parts.length === 1 &&
+                first === wanted &&
+                !["search", "features", "topics", "settings"].includes(first);
+
+        case "Pinterest":
+            return parts.length === 1 &&
+                first === wanted;
+
+        case "Facebook":
+            return parts.length === 1 &&
+                first === wanted;
 
         case "Steam":
-            return parts.length >= 2 &&
-                ["id", "profiles"].includes(parts[0]);
+            return (
+                (parts.length === 2 &&
+                    parts[0] === "id" &&
+                    second === wanted) ||
+                (parts.length === 2 &&
+                    parts[0] === "profiles" &&
+                    second === wanted)
+            );
+
+        case "Roblox":
+            return parts.length === 3 &&
+                parts[0] === "users" &&
+                parts[2] === "profile";
 
         default:
             return false;
@@ -89,7 +119,7 @@ async function searchGoogle(query, domain = null) {
         gl: "fr",
         hl: "fr",
         safe: "active",
-        num: "10"
+        num: "20"
     });
 
     const response = await fetch(
@@ -117,36 +147,45 @@ async function searchPlatform(platform, query, mode) {
             try {
                 const url = new URL(item.link);
 
-                return (
-                    url.protocol === "https:" ||
-                    url.protocol === "http:"
-                ) && (
+                const validDomain =
                     url.hostname === platform.domain ||
-                    url.hostname.endsWith("." + platform.domain)
-                );
+                    url.hostname.endsWith("." + platform.domain);
+
+                if (!validDomain) return false;
+
+                // En mode pseudo, on garde uniquement
+                // les URL correspondant à un profil possible.
+                if (mode === "pseudo") {
+                    return isProfile(
+                        platform.name,
+                        url,
+                        query
+                    );
+                }
+
+                return true;
+
             } catch {
                 return false;
             }
         })
-        .map(item => {
-            const url = new URL(item.link);
+        .map(item => ({
+            title: item.title || "Page sans titre",
+            description: item.snippet || "",
+            url: item.link,
+            possibleMatch: mode === "pseudo",
+            type: mode === "pseudo"
+                ? "Profil possible à vérifier"
+                : "Résultat public"
+        }));
 
-            const profile = mode === "pseudo"
-                ? isProfile(platform.name, url, query)
-                : false;
-
-            return {
-                title: item.title || "Page sans titre",
-                description: item.snippet || "",
-                url: item.link,
-                possibleMatch: profile,
-                type: mode === "pseudo"
-                    ? profile
-                        ? "Profil possible"
-                        : "Mention ou publication"
-                    : "Résultat public"
-            };
-        });
+    console.log(
+        platform.name,
+        "Résultats reçus :",
+        rawResults.length,
+        "| Résultats conservés :",
+        results.length
+    );
 
     return {
         name: platform.name,
@@ -199,8 +238,10 @@ app.post("/api/search", async (req, res) => {
             });
         }
 
-        if (mode === "pseudo" &&
-            !/^[a-zA-Z0-9_.@-]{2,50}$/.test(query)) {
+        if (
+            mode === "pseudo" &&
+            !/^[a-zA-Z0-9_.@-]{2,50}$/.test(query)
+        ) {
             return res.status(400).json({
                 error: "Pseudo invalide."
             });
@@ -288,5 +329,5 @@ app.post("/api/search", async (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log("PSEUDO.FINDER V8 actif sur le port " + PORT);
+    console.log("PSEUDO.FINDER V9 actif sur le port " + PORT);
 });
