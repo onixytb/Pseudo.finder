@@ -11,17 +11,17 @@ const API_KEY = process.env.SERPAPI_KEY;
 const PORT = process.env.PORT || 3000;
 
 const platforms = [
-    { name: "Instagram", domain: "instagram.com" },
-    { name: "TikTok", domain: "tiktok.com" },
     { name: "YouTube", domain: "youtube.com" },
-    { name: "Twitch", domain: "twitch.tv" },
     { name: "Reddit", domain: "reddit.com" },
-    { name: "GitHub", domain: "github.com" },
     { name: "X / Twitter", domain: "x.com" },
-    { name: "Pinterest", domain: "pinterest.com" },
+    { name: "TikTok", domain: "tiktok.com" },
+    { name: "Instagram", domain: "instagram.com" },
     { name: "Facebook", domain: "facebook.com" },
-    { name: "Roblox", domain: "roblox.com" },
-    { name: "Steam", domain: "steamcommunity.com" }
+    { name: "Pinterest", domain: "pinterest.com" },
+    { name: "Twitch", domain: "twitch.tv" },
+    { name: "GitHub", domain: "github.com" },
+    { name: "Steam", domain: "steamcommunity.com" },
+    { name: "Roblox", domain: "roblox.com" }
 ];
 
 app.get("/", (req, res) => {
@@ -35,21 +35,13 @@ function normalize(value) {
         .replace(/[^a-z0-9]/g, "");
 }
 
-function looksLikeProfile(platform, url, pseudo) {
+function isProfile(platform, url, query) {
     const parts = url.pathname.split("/").filter(Boolean);
-    const wanted = normalize(pseudo);
+    const wanted = normalize(query);
 
     if (!parts.length) return false;
 
     const first = normalize(parts[0]);
-
-    const blocked = [
-        "search", "explore", "videos", "video",
-        "reels", "reel", "p", "posts", "watch",
-        "shorts", "feed", "hashtag", "tags"
-    ];
-
-    if (blocked.includes(first)) return false;
 
     switch (platform) {
         case "Instagram":
@@ -58,43 +50,46 @@ function looksLikeProfile(platform, url, pseudo) {
         case "X / Twitter":
         case "Pinterest":
         case "Facebook":
-            return parts.length === 1;
+            return parts.length === 1 && first === wanted;
 
         case "TikTok":
-            return parts[0].startsWith("@");
+            return parts[0].startsWith("@") && first === wanted;
 
         case "YouTube":
-            return (
-                parts[0].startsWith("@") ||
-                ["channel", "user", "c"].includes(first)
-            );
+            return parts[0].startsWith("@") && first === wanted;
 
         case "Reddit":
             return parts.length >= 2 &&
-                ["user", "u"].includes(first);
+                ["user", "u"].includes(parts[0].toLowerCase()) &&
+                normalize(parts[1]) === wanted;
 
         case "Roblox":
             return parts.length >= 3 &&
-                first === "users" &&
+                parts[0] === "users" &&
                 parts[2] === "profile";
 
         case "Steam":
-            return ["id", "profiles"].includes(first);
+            return parts.length >= 2 &&
+                ["id", "profiles"].includes(parts[0]);
 
         default:
             return false;
     }
 }
 
-async function searchPlatform(platform, pseudo) {
+async function searchGoogle(query, domain = null) {
+    const searchQuery = domain
+        ? `site:${domain} ${query}`
+        : query;
+
     const params = new URLSearchParams({
         engine: "google",
-        q: `site:${platform.domain} ${pseudo}`,
+        q: searchQuery,
         api_key: API_KEY,
         gl: "fr",
         hl: "fr",
         safe: "active",
-        num: "20"
+        num: "10"
     });
 
     const response = await fetch(
@@ -108,12 +103,13 @@ async function searchPlatform(platform, pseudo) {
         throw new Error(data.error || "Erreur SerpApi");
     }
 
-    const rawResults = data.organic_results || [];
+    return data.organic_results || [];
+}
 
-    console.log(
-        platform.name,
-        "Résultats Google :",
-        rawResults.length
+async function searchPlatform(platform, query, mode) {
+    const rawResults = await searchGoogle(
+        query,
+        platform.domain
     );
 
     const results = rawResults
@@ -121,11 +117,13 @@ async function searchPlatform(platform, pseudo) {
             try {
                 const url = new URL(item.link);
 
-                const validDomain =
+                return (
+                    url.protocol === "https:" ||
+                    url.protocol === "http:"
+                ) && (
                     url.hostname === platform.domain ||
-                    url.hostname.endsWith("." + platform.domain);
-
-                return validDomain;
+                    url.hostname.endsWith("." + platform.domain)
+                );
             } catch {
                 return false;
             }
@@ -133,32 +131,52 @@ async function searchPlatform(platform, pseudo) {
         .map(item => {
             const url = new URL(item.link);
 
-            const profile = looksLikeProfile(
-                platform.name,
-                url,
-                pseudo
-            );
+            const profile = mode === "pseudo"
+                ? isProfile(platform.name, url, query)
+                : false;
 
             return {
-                title: item.title || "Page trouvée",
+                title: item.title || "Page sans titre",
                 description: item.snippet || "",
                 url: item.link,
                 possibleMatch: profile,
-                type: profile
-                    ? "Profil possible"
-                    : "Mention ou publication"
+                type: mode === "pseudo"
+                    ? profile
+                        ? "Profil possible"
+                        : "Mention ou publication"
+                    : "Résultat public"
             };
         });
 
-    console.log(
-        platform.name,
-        "Résultats conservés :",
-        results.length
-    );
-
     return {
         name: platform.name,
-        domain: platform.domain,
+        status: results.length ? "results" : "empty",
+        results
+    };
+}
+
+async function searchGeneralGoogle(query) {
+    const rawResults = await searchGoogle(query);
+
+    const results = rawResults
+        .filter(item => {
+            try {
+                const url = new URL(item.link);
+                return ["http:", "https:"].includes(url.protocol);
+            } catch {
+                return false;
+            }
+        })
+        .map(item => ({
+            title: item.title || "Page sans titre",
+            description: item.snippet || "",
+            url: item.link,
+            possibleMatch: false,
+            type: "Résultat Google"
+        }));
+
+    return {
+        name: "Google",
         status: results.length ? "results" : "empty",
         results
     };
@@ -166,9 +184,23 @@ async function searchPlatform(platform, pseudo) {
 
 app.post("/api/search", async (req, res) => {
     try {
-        const pseudo = String(req.body.pseudo || "").trim();
+        const query = String(req.body.query || "").trim();
+        const mode = req.body.mode;
 
-        if (!/^[a-zA-Z0-9_.-]{2,50}$/.test(pseudo)) {
+        if (query.length < 2 || query.length > 150) {
+            return res.status(400).json({
+                error: "Recherche invalide."
+            });
+        }
+
+        if (!["pseudo", "general"].includes(mode)) {
+            return res.status(400).json({
+                error: "Mode de recherche invalide."
+            });
+        }
+
+        if (mode === "pseudo" &&
+            !/^[a-zA-Z0-9_.@-]{2,50}$/.test(query)) {
             return res.status(400).json({
                 error: "Pseudo invalide."
             });
@@ -176,32 +208,43 @@ app.post("/api/search", async (req, res) => {
 
         if (!API_KEY) {
             return res.status(500).json({
-                error: "Clé SerpApi manquante."
+                error: "Clé SERPAPI_KEY manquante sur Render."
             });
         }
 
-        const output = new Array(platforms.length);
+        const tasks = mode === "general"
+            ? [
+                () => searchGeneralGoogle(query),
+                ...platforms.map(platform => () =>
+                    searchPlatform(platform, query, mode)
+                )
+            ]
+            : platforms.map(platform => () =>
+                searchPlatform(platform, query, mode)
+            );
+
+        const output = new Array(tasks.length);
         let nextIndex = 0;
 
         async function worker() {
-            while (nextIndex < platforms.length) {
+            while (nextIndex < tasks.length) {
                 const index = nextIndex++;
-                const platform = platforms[index];
 
                 try {
-                    output[index] = await searchPlatform(
-                        platform,
-                        pseudo
-                    );
+                    output[index] = await tasks[index]();
                 } catch (error) {
                     console.error(
-                        platform.name,
+                        "Recherche",
+                        index,
                         error.message
                     );
 
                     output[index] = {
-                        name: platform.name,
-                        domain: platform.domain,
+                        name: mode === "general" && index === 0
+                            ? "Google"
+                            : mode === "general"
+                                ? platforms[index - 1].name
+                                : platforms[index].name,
                         status: "error",
                         error: error.message,
                         results: []
@@ -213,6 +256,7 @@ app.post("/api/search", async (req, res) => {
         await Promise.all([
             worker(),
             worker(),
+            worker(),
             worker()
         ]);
 
@@ -222,7 +266,8 @@ app.post("/api/search", async (req, res) => {
         );
 
         res.json({
-            pseudo,
+            query,
+            mode,
             platforms: output,
             totalResults,
             checked: output.filter(
@@ -243,7 +288,5 @@ app.post("/api/search", async (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(
-        "PSEUDO.FINDER V7 actif sur le port " + PORT
-    );
+    console.log("PSEUDO.FINDER V8 actif sur le port " + PORT);
 });
