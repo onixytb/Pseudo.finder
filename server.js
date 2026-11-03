@@ -91,7 +91,7 @@ function isProfile(platform, url, pseudo, title) {
 async function searchPlatform(platform, pseudo) {
     const params = new URLSearchParams({
         engine: "google",
-        q: `site:${platform.domain} "${pseudo}"`,
+        q: `site:${platform.domain} ${pseudo}`,
         api_key: API_KEY,
         gl: "fr",
         hl: "fr",
