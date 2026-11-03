@@ -1,0 +1,13 @@
+
+{
+  "name": "pseudo-finder-v3",
+  "version": "3.0.0",
+  "description": "Recherche de pseudos publics",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
