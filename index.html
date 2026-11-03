@@ -129,6 +129,36 @@
         </p>
     </section>
 
+<section id="osintPage" class="hidden">
+
+    <button class="back-button" id="osintBackBtn">
+        ← RETOUR À L'ACCUEIL
+    </button>
+
+    <h2>OSINT.FINDER</h2>
+    <p class="subtitle">
+        Recherche d'informations publiques et professionnelles.
+    </p>
+
+    <div class="search-box">
+        <input id="osintLast" placeholder="Nom de famille..." maxlength="70">
+        <input id="osintFirst" placeholder="Prénom..." maxlength="70">
+        <button id="osintBtn">LANCER LA RECHERCHE ↗</button>
+    </div>
+
+    <p id="osintStatus">En attente d'une recherche...</p>
+
+    <h3>SOURCES PUBLIQUES</h3>
+    <div id="osintResults"></div>
+
+    <p class="network-notice">
+        Les résultats peuvent concerner plusieurs personnes portant
+        le même nom. Vérifie toujours les sources. Seules les
+        informations publiques et non sensibles sont affichées.
+    </p>
+
+</section>
+
 </main>
 
 <script src="script.js"></script>
