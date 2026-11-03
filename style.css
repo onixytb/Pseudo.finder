@@ -149,19 +149,21 @@ h2 {
     border-color: #35e69a;
 }
 
-.search-box button {
+.search-box button,
+.network-card button {
     width: 100%;
-    padding: 23px;
+    padding: 19px;
     border: none;
     border-radius: 12px;
     background: #35e69a;
     color: #07120d;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: bold;
     cursor: pointer;
 }
 
-.search-box button:disabled {
+.search-box button:disabled,
+.network-card button:disabled {
     opacity: .5;
     cursor: wait;
 }
@@ -220,17 +222,18 @@ h2 {
 
 h3 {
     color: #8993a3;
-    font-size: 17px;
-    letter-spacing: 3px;
-    margin-bottom: 25px;
+    font-size: 15px;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
 }
 
-.platform-card {
+.platform-card,
+.network-card {
     background: #151b26;
     border: 1px solid #293342;
-    border-radius: 12px;
-    padding: 17px;
-    margin-bottom: 15px;
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 16px;
 }
 
 .platform-header {
@@ -240,10 +243,6 @@ h3 {
     flex-wrap: wrap;
     gap: 10px;
     margin-bottom: 12px;
-}
-
-.platform-header strong {
-    font-size: 16px;
 }
 
 .status-badge {
@@ -270,11 +269,6 @@ h3 {
 .result-item {
     border-top: 1px solid #293342;
     padding: 15px 0;
-}
-
-.result-item strong {
-    font-size: 14px;
-    line-height: 1.5;
 }
 
 .result-item p {
@@ -313,11 +307,39 @@ h3 {
     margin-top: 10px;
 }
 
-.notice {
-    color: #8993a3;
+.network-card {
+    text-align: center;
+    padding: 28px 20px;
+}
+
+.network-icon {
+    color: #35e69a;
+    font-size: 42px;
+    margin-bottom: 15px;
+}
+
+.network-card h3 {
+    color: white;
+}
+
+.network-card p {
+    color: #35e69a;
+    overflow-wrap: anywhere;
+    margin: 18px 0;
+    font-size: 17px;
+}
+
+#bluetoothResult {
+    color: #a0a9b7;
     font-size: 13px;
+    margin-top: 15px;
+}
+
+.network-notice {
+    color: #8993a3;
+    font-size: 12px;
     line-height: 1.8;
-    margin: 35px 0 50px;
+    margin: 25px 0 45px;
 }
 
 @media(max-width: 480px) {
