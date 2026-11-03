@@ -4,22 +4,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>PSEUDO.FINDER V3</title>
+    <title>PSEUDO.FINDER</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <main class="container">
-        <header>
-            <h1>PSEUDO<span>.FINDER</span></h1>
-            <p>PUBLIC USERNAME SEARCH</p>
-            <small>VERSION 3.0</small>
-        </header>
 
-        <section class="search-box">
-            <input id="pseudo" maxlength="50"
-                placeholder="Entre un pseudo...">
+<main class="container">
+
+    <header>
+        <h1>PSEUDO<span>.FINDER</span></h1>
+        <p>PUBLIC SEARCH ENGINE</p>
+        <small>VERSION 8.0</small>
+    </header>
+
+    <section id="home">
+        <h2>Que veux-tu rechercher ?</h2>
+        <p class="subtitle">Choisis ton mode de recherche.</p>
+
+        <button class="choice-card" id="pseudoChoice">
+            <span class="choice-icon">⌕</span>
+            <span>
+                <strong>Recherche de pseudo</strong>
+                <small>Recherche des profils sur les réseaux sociaux.</small>
+            </span>
+            <b>↗</b>
+        </button>
+
+        <button class="choice-card" id="generalChoice">
+            <span class="choice-icon">◎</span>
+            <span>
+                <strong>Recherche générale</strong>
+                <small>Recherche un sujet sur plusieurs plateformes.</small>
+            </span>
+            <b>↗</b>
+        </button>
+    </section>
+
+    <section id="searchPage" class="hidden">
+        <button class="back-button" id="backBtn">← RETOUR À L'ACCUEIL</button>
+
+        <h2 id="searchTitle">Recherche</h2>
+        <p class="subtitle" id="searchDescription"></p>
+
+        <div class="search-box">
+            <input id="searchInput" maxlength="150"
+                   placeholder="Entre ta recherche...">
             <button id="searchBtn">LANCER LA RECHERCHE ↗</button>
-        </section>
+        </div>
 
         <p id="status">En attente d'une recherche...</p>
 
@@ -27,35 +58,32 @@
             <div id="progressBar"></div>
         </div>
 
-        
-<section class="stats">
-    <div>
-        <strong id="total">0</strong>
-        <span>PAGES TROUVÉES</span>
-    </div>
+        <section class="stats">
+            <div>
+                <strong id="total">0</strong>
+                <span>PAGES TROUVÉES</span>
+            </div>
+            <div>
+                <strong id="found">0</strong>
+                <span>PLATEFORMES AVEC RÉSULTATS</span>
+            </div>
+            <div>
+                <strong id="checked">0</strong>
+                <span>RECHERCHES RÉUSSIES</span>
+            </div>
+        </section>
 
-    <div>
-        <strong id="found">0</strong>
-        <span>PLATEFORMES AVEC RÉSULTATS</span>
-    </div>
-
-    <div>
-        <strong id="checked">0</strong>
-        <span>RECHERCHES RÉUSSIES</span>
-    </div>
-</section>
-
-
-        <h3>RÉSULTATS PUBLICS</h3>
+        <h3 id="resultsTitle">RÉSULTATS</h3>
         <div id="results"></div>
 
         <p class="notice">
-            Les résultats proviennent de pages publiques indexées.
-            Ils ne confirment pas à eux seuls l'existence actuelle
-            d'un compte.
+            Résultats issus de pages publiques indexées.
+            Ils ne garantissent pas l'existence ou l'actualité d'un compte.
         </p>
-    </main>
+    </section>
 
-    <script src="script.js"></script>
+</main>
+
+<script src="script.js"></script>
 </body>
 </html>
