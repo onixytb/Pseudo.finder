@@ -1,161 +1,85 @@
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-    background: #080b11;
-    color: white;
-    font-family: Arial, sans-serif;
-    padding: 20px;
-}
-
-.container {
-    max-width: 680px;
-    margin: 55px auto;
-}
-
-header {
-    text-align: center;
-    margin-bottom: 35px;
-}
-
-h1 {
-    font-size: 30px;
-    letter-spacing: 2px;
-}
-
-h1 span {
-    color: #35e69a;
-}
-
-header p {
-    color: #858d9b;
-    font-size: 11px;
-    letter-spacing: 3px;
-    margin: 12px;
-}
-
-header small {
-    color: #35e69a;
-}
-
-.search-box {
-    padding: 15px;
+.platform-card {
     background: #151b26;
     border: 1px solid #293342;
     border-radius: 12px;
-}
-
-input {
-    width: 100%;
     padding: 16px;
-    background: #080b11;
-    border: 1px solid #303a49;
-    border-radius: 8px;
-    color: white;
-    font-size: 16px;
-    outline: none;
+    margin-bottom: 13px;
 }
 
-button {
-    width: 100%;
-    margin-top: 12px;
-    padding: 16px;
-    background: #35e69a;
-    color: #07130d;
-    border: none;
-    border-radius: 8px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-button:disabled {
-    opacity: .5;
-}
-
-#status {
-    text-align: center;
-    color: #35e69a;
-    margin: 22px 0 12px;
-    font-size: 13px;
-}
-
-.progress {
-    height: 5px;
-    background: #222b38;
-    border-radius: 10px;
-    overflow: hidden;
-}
-
-#progressBar {
-    width: 0%;
-    height: 100%;
-    background: #35e69a;
-    transition: width .3s;
-}
-
-.stats {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
+.platform-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
     gap: 10px;
-    margin: 25px 0 35px;
+    margin-bottom: 12px;
 }
 
-.stats div {
-    padding: 18px 5px;
-    background: #151b26;
-    border-radius: 9px;
-    text-align: center;
+.platform-header strong {
+    font-size: 15px;
 }
 
-.stats strong {
-    display: block;
+.status-badge {
+    font-size: 10px;
+    padding: 7px 9px;
+    border-radius: 20px;
+}
+
+.status-found {
+    background: #123b2b;
     color: #35e69a;
-    font-size: 23px;
 }
 
-.stats span {
-    font-size: 9px;
-    color: #858d9b;
+.status-empty {
+    background: #252c38;
+    color: #a0a9b7;
 }
 
-h3 {
+.status-error {
+    background: #421f26;
+    color: #ff8585;
+}
+
+.result-item {
+    border-top: 1px solid #293342;
+    padding: 13px 0;
+}
+
+.result-item strong {
     font-size: 13px;
-    color: #858d9b;
-    letter-spacing: 2px;
-    margin-bottom: 15px;
 }
 
-.result {
-    padding: 16px;
+.result-item p {
+    color: #8994a4;
+    font-size: 12px;
+    margin: 8px 0;
+    line-height: 1.5;
+}
+
+.result-item small {
+    display: block;
     margin-bottom: 10px;
-    background: #151b26;
-    border: 1px solid #293342;
-    border-radius: 9px;
+    font-size: 10px;
 }
 
-.result strong {
-    font-size: 14px;
-}
-
-.result p {
-    color: #9ba5b4;
-    font-size: 12px;
-    margin: 9px 0;
-}
-
-.result a {
+.match-possible {
     color: #35e69a;
-    font-size: 12px;
-    text-decoration: none;
 }
 
-.notice {
-    color: #707b8a;
-    font-size: 11px;
-    line-height: 1.6;
-    margin-top: 30px;
-  }
+.match-unknown {
+    color: #f3c66a;
+}
+
+.result-item a {
+    display: inline-block;
+    color: #35e69a;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.platform-message {
+    color: #ff8585;
+    font-size: 12px;
+}
