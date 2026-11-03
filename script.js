@@ -1,373 +1,437 @@
 
-const home = document.getElementById("home");
-const searchPage = document.getElementById("searchPage");
-const networkPage = document.getElementById("networkPage");
+const $ = id => document.getElementById(id);
 
-const searchInput = document.getElementById("searchInput");
-const searchBtn = document.getElementById("searchBtn");
-const statusText = document.getElementById("status");
-const resultsBox = document.getElementById("results");
+const home = $("home");
+const workspace = $("workspace");
 
-let currentMode = "pseudo";
+const tools = {
+    pseudo: {
+        title: "PSEUDO.FINDER",
+        description: "Recherche des profils publics sur plusieurs plateformes.",
+        form: "searchForm",
+        mode: "pseudo"
+    },
+    general: {
+        title: "GENERAL SEARCH",
+        description: "Recherche un sujet sur plusieurs plateformes.",
+        form: "searchForm",
+        mode: "general"
+    },
+    osint: {
+        title: "OSINT.FINDER",
+        description: "Recherche des sources publiques et professionnelles.",
+        form: "searchForm",
+        mode: "osint"
+    },
+    network: {
+        title: "NETWORK.FINDER",
+        description: "Informations sur ta connexion et Bluetooth.",
+        form: "bluetoothPanel"
+    },
+    domain: {
+        title: "DOMAIN.FINDER",
+        description: "Consulte les informations DNS publiques d'un domaine.",
+        form: "domainForm"
+    },
+    ip: {
+        title: "IP.LOOKUP",
+        description: "Consulte l'adresse IP publique de ta connexion.",
+        form: "ipPanel"
+    },
+    url: {
+        title: "URL.ANALYZER",
+        description: "Examine un lien sans ouvrir le site.",
+        form: "urlForm"
+    },
+    history: {
+        title: "HISTORY",
+        description: "Tes dernières recherches enregistrées sur cet appareil.",
+        form: "historyPanel"
+    }
+};
 
+let currentTool = null;
+let history = JSON.parse(localStorage.getItem("pf_history") || "[]");
 
-function showPage(page) {
+document.querySelectorAll("[data-page]").forEach(button => {
+    button.addEventListener("click", () => openTool(button.dataset.page));
+});
+
+$("logoHome").addEventListener("click", event => {
+    event.preventDefault();
+    goHome();
+});
+
+$("back").addEventListener("click", goHome);
+
+function openTool(name) {
+    const tool = tools[name];
+    if (!tool) return;
+
+    currentTool = name;
     home.classList.add("hidden");
-    searchPage.classList.add("hidden");
-    networkPage.classList.add("hidden");
-    osintPage.classList.add("hidden");
+    workspace.classList.remove("hidden");
 
-    page.classList.remove("hidden");
+    $("pageTitle").textContent = tool.title;
+    $("pageDescription").textContent = tool.description;
+
+    ["searchForm", "domainForm", "urlForm", "ipPanel",
+     "bluetoothPanel", "historyPanel", "output"].forEach(id => {
+        $(id).classList.add("hidden");
+    });
+
+    $(tool.form).classList.remove("hidden");
+
+    if (name === "pseudo") {
+        $("query").placeholder = "Entre un pseudo...";
+        $("nameFields").classList.add("hidden");
+        $("query").classList.remove("hidden");
+    }
+
+    if (name === "general") {
+        $("query").placeholder = "Ex : Rocket League...";
+        $("nameFields").classList.add("hidden");
+        $("query").classList.remove("hidden");
+    }
+
+    if (name === "osint") {
+        $("nameFields").classList.remove("hidden");
+        $("query").classList.add("hidden");
+    }
+
+    if (["pseudo", "general", "osint"].includes(name)) {
+        $("output").classList.remove("hidden");
+        $("results").innerHTML = "";
+        $("status").textContent = "";
+    }
+
+    if (name === "history") displayHistory();
 }
 
-document.getElementById("pseudoChoice").addEventListener("click", () => {
-    currentMode = "pseudo";
-    document.getElementById("searchTitle").textContent =
-        "Recherche de pseudo";
-    document.getElementById("searchDescription").textContent =
-        "Recherche des profils sur les réseaux sociaux.";
-    searchInput.placeholder = "Entre un pseudo...";
-    showPage(searchPage);
-});
-
-document.getElementById("generalChoice").addEventListener("click", () => {
-    currentMode = "general";
-    document.getElementById("searchTitle").textContent =
-        "Recherche générale";
-    document.getElementById("searchDescription").textContent =
-        "Recherche un sujet sur plusieurs plateformes.";
-    searchInput.placeholder = "Ex : Rocket League...";
-    showPage(searchPage);
-});
-
-document.getElementById("networkChoice").addEventListener("click", () => {
-    showPage(networkPage);
-});
-
-document.getElementById("backBtn").addEventListener("click", () => {
-    showPage(home);
-    resultsBox.innerHTML = "";
-    searchInput.value = "";
-    statusText.textContent = "En attente d'une recherche...";
-    updateStats(0, 0, 0);
-    document.getElementById("progressBar").style.width = "0%";
-});
-
-document.getElementById("networkBackBtn").addEventListener("click", () => {
-    showPage(home);
-});
-
-searchBtn.addEventListener("click", search);
-
-searchInput.addEventListener("keydown", event => {
-    if (event.key === "Enter") search();
-});
-
-function updateStats(total, found, checked) {
-    document.getElementById("total").textContent = total;
-    document.getElementById("found").textContent = found;
-    document.getElementById("checked").textContent = checked;
+function goHome() {
+    workspace.classList.add("hidden");
+    home.classList.remove("hidden");
+    currentTool = null;
 }
 
-function createElement(tag, className, content) {
-    const element = document.createElement(tag);
-    if (className) element.className = className;
-    if (content !== undefined) element.textContent = content;
-    return element;
+function saveHistory(type, value, count) {
+    history.unshift({
+        type,
+        value,
+        count,
+        date: new Date().toLocaleString("fr-FR")
+    });
+
+    history = history.slice(0, 40);
+    localStorage.setItem("pf_history", JSON.stringify(history));
 }
 
-async function search() {
-    const query = searchInput.value.trim();
+function displayHistory() {
+    const list = $("historyList");
+    list.innerHTML = "";
 
-    if (query.length < 2) {
-        statusText.textContent = "Entre au moins 2 caractères.";
+    if (!history.length) {
+        list.textContent = "Aucune recherche enregistrée.";
         return;
     }
 
-    searchBtn.disabled = true;
-    resultsBox.innerHTML = "";
-    updateStats(0, 0, 0);
-    document.getElementById("progressBar").style.width = "0%";
-    statusText.textContent = "Recherche en cours...";
+    history.forEach(item => {
+        const row = document.createElement("div");
+        row.className = "history-item";
+
+        const info = document.createElement("div");
+        const name = document.createElement("strong");
+        name.textContent = item.type + " : " + item.value;
+
+        const date = document.createElement("small");
+        date.textContent = item.date;
+
+        info.append(name, document.createElement("br"), date);
+
+        const count = document.createElement("span");
+        count.textContent = item.count + " résultats";
+
+        row.append(info, count);
+        list.appendChild(row);
+    });
+}
+
+$("clearHistory").addEventListener("click", () => {
+    if (!confirm("Effacer tout l'historique ?")) return;
+    history = [];
+    localStorage.removeItem("pf_history");
+    displayHistory();
+});
+
+// RECHERCHES
+$("runSearch").addEventListener("click", runSearch);
+
+async function runSearch() {
+    const mode = tools[currentTool].mode;
+
+    let body = { mode };
+
+    if (mode === "osint") {
+        body.first = $("firstName").value.trim();
+        body.last = $("lastName").value.trim();
+
+        if (!body.first || !body.last) {
+            $("status").textContent = "Entre un nom et un prénom.";
+            return;
+        }
+    } else {
+        body.query = $("query").value.trim();
+
+        if (body.query.length < 2) {
+            $("status").textContent = "Recherche trop courte.";
+            return;
+        }
+    }
+
+    const button = $("runSearch");
+    button.disabled = true;
+    button.textContent = "RECHERCHE EN COURS...";
+
+    $("results").innerHTML = "";
+    $("status").textContent = "Connexion au moteur de recherche...";
 
     try {
-        const response = await fetch("/api/search", {
+        const endpoint = mode === "osint" ? "/api/osint" : "/api/search";
+
+        const response = await fetch(endpoint, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                query,
-                mode: currentMode
-            })
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body)
         });
 
         const data = await response.json();
 
-        if (!response.ok) {
-            throw new Error(data.error || "Erreur serveur.");
+        if (!response.ok) throw new Error(data.error || "Erreur.");
+
+        let groups;
+
+        if (mode === "osint") {
+            groups = data.groups;
+        } else {
+            groups = data.platforms.map(platform => ({
+                category: platform.name,
+                results: platform.results,
+                error: platform.error
+            }));
         }
 
-        displayResults(data);
+        displayGroups(groups);
+
+        const count = groups.reduce(
+            (sum, group) => sum + group.results.length, 0
+        );
+
+        const value = mode === "osint"
+            ? body.first + " " + body.last
+            : body.query;
+
+        $("status").textContent = count + " résultat(s) trouvé(s).";
+        saveHistory(currentTool, value, count);
 
     } catch (error) {
-        statusText.textContent = error.message;
+        $("status").textContent = error.message;
     } finally {
-        searchBtn.disabled = false;
+        button.disabled = false;
+        button.textContent = "LANCER LA RECHERCHE ↗";
     }
 }
 
-function displayResults(data) {
-    resultsBox.innerHTML = "";
+function displayGroups(groups) {
+    $("results").innerHTML = "";
 
-    const platforms = data.platforms || [];
-    let total = 0;
-    let found = 0;
-    let checked = 0;
+    groups.forEach(group => {
+        const card = document.createElement("article");
+        card.className = "result-card";
 
-    platforms.forEach(platform => {
-        if (platform.status !== "error") checked++;
-        total += platform.results.length;
+        const heading = document.createElement("h3");
+        heading.textContent = group.category || group.name;
 
-        if (platform.results.length > 0) found++;
+        card.appendChild(heading);
 
-        const card = createElement("article", "platform-card");
-        const header = createElement("div", "platform-header");
-        const name = createElement("strong", "", platform.name);
-
-        let badgeText = "Aucun résultat";
-        let badgeClass = "status-empty";
-
-        if (platform.status === "error") {
-            badgeText = "Erreur de recherche";
-            badgeClass = "status-error";
-        } else if (platform.results.length > 0) {
-            badgeText = platform.results.length + " résultat(s)";
-            badgeClass = "status-found";
+        if (group.error) {
+            const error = document.createElement("p");
+            error.textContent = group.error;
+            card.appendChild(error);
         }
 
-        const badge = createElement(
-            "span",
-            "status-badge " + badgeClass,
-            badgeText
-        );
+        group.results.forEach(item => {
+            const title = document.createElement("h3");
+            title.textContent = item.title;
 
-        header.append(name, badge);
-        card.appendChild(header);
+            const description = document.createElement("p");
+            description.textContent = item.description || "";
 
-        if (platform.error) {
-            card.appendChild(
-                createElement("p", "platform-message", platform.error)
-            );
-        }
-
-        platform.results.forEach(result => {
-            const item = createElement("div", "result-item");
-
-            const title = createElement(
-                "strong",
-                "",
-                result.title
-            );
-
-            const description = createElement(
-                "p",
-                "",
-                result.description || "Pas de description."
-            );
-
-            const match = createElement(
-                "small",
-                result.possibleMatch ? "match-possible" : "match-unknown",
-                result.type || "Résultat à vérifier"
-            );
-
-            const link = createElement("a", "", "OUVRIR ↗");
-            link.href = result.url;
+            const link = document.createElement("a");
+            link.textContent = "OUVRIR LA SOURCE ↗";
+            link.href = item.url;
             link.target = "_blank";
             link.rel = "noopener noreferrer";
 
-            item.append(title, description, match, link);
-            card.appendChild(item);
+            card.append(title, description, link);
         });
 
-        resultsBox.appendChild(card);
+        if (!group.results.length && !group.error) {
+            const empty = document.createElement("p");
+            empty.textContent = "Aucun résultat trouvé.";
+            card.appendChild(empty);
+        }
+
+        $("results").appendChild(card);
     });
-
-    updateStats(total, found, checked);
-    document.getElementById("progressBar").style.width = "100%";
-
-    statusText.textContent =
-        `${total} résultat(s) trouvé(s) sur ${checked} plateformes vérifiées.`;
 }
 
-// Afficher uniquement ton adresse IP publique.
-document.getElementById("ipBtn").addEventListener("click", async () => {
-    const button = document.getElementById("ipBtn");
-    const output = document.getElementById("ipAddress");
+// DOMAIN.FINDER
+$("domainBtn").addEventListener("click", async () => {
+    const domain = $("domainInput").value.trim();
+    const button = $("domainBtn");
 
     button.disabled = true;
-    output.textContent = "Récupération en cours...";
+    $("results").innerHTML = "";
+    $("status").textContent = "Analyse DNS en cours...";
 
     try {
-        const response = await fetch("https://api.ipify.org?format=json");
-
-        if (!response.ok) {
-            throw new Error("Service indisponible.");
-        }
+        const response = await fetch("/api/domain", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ domain })
+        });
 
         const data = await response.json();
+        if (!response.ok) throw new Error(data.error);
 
-        if (!/^[0-9a-fA-F:.]+$/.test(data.ip || "")) {
-            throw new Error("Adresse IP invalide.");
-        }
-
-        output.textContent = data.ip;
+        displayGroups(data.groups);
+        $("status").textContent = "Analyse terminée.";
+        saveHistory("DOMAIN.FINDER", domain, data.groups.length);
 
     } catch (error) {
-        output.textContent = "Impossible de récupérer ton IP.";
+        $("status").textContent = error.message;
     } finally {
         button.disabled = false;
     }
 });
 
-// Demander à l'utilisateur de choisir un appareil Bluetooth.
-document.getElementById("bluetoothBtn").addEventListener("click", async () => {
-    const button = document.getElementById("bluetoothBtn");
-    const status = document.getElementById("bluetoothStatus");
-    const result = document.getElementById("bluetoothResult");
+// IP.LOOKUP
+$("ipBtn").addEventListener("click", async () => {
+    const button = $("ipBtn");
+    button.disabled = true;
+    $("myIP").textContent = "Chargement...";
+
+    try {
+        const response = await fetch("https://api.ipify.org?format=json");
+        if (!response.ok) throw new Error("Service indisponible.");
+
+        const data = await response.json();
+        $("myIP").textContent = data.ip;
+
+        saveHistory("IP.LOOKUP", "Mon IP publique", 1);
+
+    } catch {
+        $("myIP").textContent = "Impossible de récupérer l'IP.";
+    } finally {
+        button.disabled = false;
+    }
+});
+
+// NETWORK.FINDER
+$("bluetoothBtn").addEventListener("click", async () => {
+    const output = $("bluetoothResult");
 
     if (!navigator.bluetooth) {
-        status.textContent =
-            "Bluetooth Web non disponible dans ce navigateur.";
+        output.textContent =
+            "Bluetooth Web non disponible sur ce navigateur.";
         return;
     }
 
-    button.disabled = true;
-    status.textContent = "Ouverture du sélecteur Bluetooth...";
-    result.textContent = "";
+    $("bluetoothBtn").disabled = true;
 
     try {
         const device = await navigator.bluetooth.requestDevice({
             acceptAllDevices: true
         });
 
-        status.textContent = "Appareil sélectionné";
+        output.textContent =
+            "Appareil sélectionné : " +
+            (device.name || "Nom non communiqué");
 
-        const name = device.name || "Nom non communiqué";
-        result.textContent = "Nom : " + name;
+        saveHistory("NETWORK.FINDER", "Appareil Bluetooth sélectionné", 1);
 
-    } catch (error) {
-        if (error.name === "NotFoundError") {
-            status.textContent = "Aucun appareil sélectionné.";
-        } else {
-            status.textContent =
-                "Recherche annulée ou non autorisée.";
-        }
+    } catch {
+        output.textContent = "Sélection annulée ou indisponible.";
     } finally {
-        button.disabled = false;
+        $("bluetoothBtn").disabled = false;
     }
 });
 
-const osintPage = document.getElementById("osintPage");
-
-document.getElementById("osintChoice").addEventListener("click", () => {
-    showPage(osintPage);
-});
-
-document.getElementById("osintBackBtn").addEventListener("click", () => {
-    showPage(home);
-});
-
-document.getElementById("osintBtn").addEventListener("click", runOsint);
-
-async function runOsint() {
-    const first = document.getElementById("osintFirst").value.trim();
-    const last = document.getElementById("osintLast").value.trim();
-
-    const button = document.getElementById("osintBtn");
-    const status = document.getElementById("osintStatus");
-    const output = document.getElementById("osintResults");
-
-    if (!first || !last) {
-        status.textContent = "Entre un nom et un prénom.";
-        return;
-    }
-
-    button.disabled = true;
-    output.innerHTML = "";
-    status.textContent = "Recherche des sources publiques...";
+// URL.ANALYZER : analyse locale, sans visiter le lien.
+$("urlBtn").addEventListener("click", () => {
+    const raw = $("urlInput").value.trim();
+    $("results").innerHTML = "";
 
     try {
-        const response = await fetch("/api/osint", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ first, last })
-        });
+        const url = new URL(raw);
 
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error || "Erreur serveur.");
+        if (!["http:", "https:"].includes(url.protocol)) {
+            throw new Error("Protocole non accepté.");
         }
 
-        data.groups.forEach(group => {
-            const card = createElement("article", "platform-card");
-            const header = createElement("div", "platform-header");
-            const title = createElement("strong", "", group.category);
+        const host = url.hostname.toLowerCase();
+        const warnings = [];
 
-            const badge = createElement(
-                "span",
-                "status-badge status-found",
-                group.results.length + " résultat(s)"
-            );
+        if (url.protocol !== "https:") {
+            warnings.push("Le lien n'utilise pas HTTPS.");
+        }
 
-            header.append(title, badge);
-            card.appendChild(header);
+        if (host.startsWith("xn--") || host.includes(".xn--")) {
+            warnings.push("Le domaine contient des caractères internationalisés.");
+        }
 
-            if (group.error) {
-                card.appendChild(
-                    createElement("p", "platform-message", group.error)
-                );
-            }
+        if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host)) {
+            warnings.push("Le lien utilise une adresse IP comme domaine.");
+        }
 
-            group.results.forEach(item => {
-                const result = createElement("div", "result-item");
+        if (url.username || url.password) {
+            warnings.push("Le lien contient des identifiants intégrés.");
+        }
 
-                result.appendChild(
-                    createElement("strong", "", item.title)
-                );
+        if (host.length > 60) {
+            warnings.push("Le nom de domaine est particulièrement long.");
+        }
 
-                result.appendChild(
-                    createElement("p", "", item.description)
-                );
+        const card = document.createElement("article");
+        card.className = "result-card";
 
-                const link = createElement("a", "", "CONSULTER LA SOURCE ↗");
-                link.href = item.url;
-                link.target = "_blank";
-                link.rel = "noopener noreferrer";
+        const heading = document.createElement("h3");
+        heading.textContent = "RÉSULTAT DE L'ANALYSE";
 
-                result.appendChild(link);
-                card.appendChild(result);
-            });
+        const domain = document.createElement("p");
+        domain.textContent = "Domaine : " + host;
 
-            if (!group.results.length && !group.error) {
-                card.appendChild(
-                    createElement("p", "subtitle", "Aucune source trouvée.")
-                );
-            }
+        const protocol = document.createElement("p");
+        protocol.textContent = "Protocole : " + url.protocol;
 
-            output.appendChild(card);
-        });
+        const result = document.createElement("p");
+        result.textContent = warnings.length
+            ? warnings.join(" ")
+            : "Aucun indicateur simple détecté.";
 
-        status.textContent =
-            data.total + " source(s) publique(s) trouvée(s).";
+        const note = document.createElement("p");
+        note.textContent =
+            "Cette analyse locale ne garantit pas que le site est sûr.";
 
-    } catch (error) {
-        status.textContent = error.message;
-    } finally {
-        button.disabled = false;
+        card.append(heading, domain, protocol, result, note);
+        $("results").appendChild(card);
+
+        $("status").textContent =
+            warnings.length + " indicateur(s) détecté(s).";
+
+        saveHistory("URL.ANALYZER", host, warnings.length);
+
+    } catch {
+        $("status").textContent = "URL invalide. Vérifie le lien.";
     }
-}
+});
