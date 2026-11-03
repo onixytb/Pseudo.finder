@@ -1,10 +1,7 @@
 
 const home = document.getElementById("home");
 const searchPage = document.getElementById("searchPage");
-
-const pseudoChoice = document.getElementById("pseudoChoice");
-const generalChoice = document.getElementById("generalChoice");
-const backBtn = document.getElementById("backBtn");
+const networkPage = document.getElementById("networkPage");
 
 const searchInput = document.getElementById("searchInput");
 const searchBtn = document.getElementById("searchBtn");
@@ -13,54 +10,49 @@ const resultsBox = document.getElementById("results");
 
 let currentMode = "pseudo";
 
-pseudoChoice.addEventListener("click", () => {
-    openSearch("pseudo");
-});
-
-generalChoice.addEventListener("click", () => {
-    openSearch("general");
-});
-
-backBtn.addEventListener("click", () => {
-    home.classList.remove("hidden");
+function showPage(page) {
+    home.classList.add("hidden");
     searchPage.classList.add("hidden");
-    searchInput.value = "";
+    networkPage.classList.add("hidden");
+    page.classList.remove("hidden");
+}
+
+document.getElementById("pseudoChoice").addEventListener("click", () => {
+    currentMode = "pseudo";
+    document.getElementById("searchTitle").textContent =
+        "Recherche de pseudo";
+    document.getElementById("searchDescription").textContent =
+        "Recherche des profils sur les réseaux sociaux.";
+    searchInput.placeholder = "Entre un pseudo...";
+    showPage(searchPage);
+});
+
+document.getElementById("generalChoice").addEventListener("click", () => {
+    currentMode = "general";
+    document.getElementById("searchTitle").textContent =
+        "Recherche générale";
+    document.getElementById("searchDescription").textContent =
+        "Recherche un sujet sur plusieurs plateformes.";
+    searchInput.placeholder = "Ex : Rocket League...";
+    showPage(searchPage);
+});
+
+document.getElementById("networkChoice").addEventListener("click", () => {
+    showPage(networkPage);
+});
+
+document.getElementById("backBtn").addEventListener("click", () => {
+    showPage(home);
     resultsBox.innerHTML = "";
+    searchInput.value = "";
     statusText.textContent = "En attente d'une recherche...";
     updateStats(0, 0, 0);
     document.getElementById("progressBar").style.width = "0%";
 });
 
-function openSearch(mode) {
-    currentMode = mode;
-
-    home.classList.add("hidden");
-    searchPage.classList.remove("hidden");
-
-    if (mode === "pseudo") {
-        document.getElementById("searchTitle").textContent =
-            "Recherche de pseudo";
-
-        document.getElementById("searchDescription").textContent =
-            "Recherche des profils et mentions sur les réseaux sociaux.";
-
-        searchInput.placeholder = "Entre un pseudo...";
-        document.getElementById("resultsTitle").textContent =
-            "RÉSULTATS DES PROFILS";
-    } else {
-        document.getElementById("searchTitle").textContent =
-            "Recherche générale";
-
-        document.getElementById("searchDescription").textContent =
-            "Recherche un sujet sur plusieurs plateformes en même temps.";
-
-        searchInput.placeholder = "Ex : Rocket League, actualité...";
-        document.getElementById("resultsTitle").textContent =
-            "RÉSULTATS DE RECHERCHE";
-    }
-
-    searchInput.focus();
-}
+document.getElementById("networkBackBtn").addEventListener("click", () => {
+    showPage(home);
+});
 
 searchBtn.addEventListener("click", search);
 
@@ -76,10 +68,8 @@ function updateStats(total, found, checked) {
 
 function createElement(tag, className, content) {
     const element = document.createElement(tag);
-
     if (className) element.className = className;
     if (content !== undefined) element.textContent = content;
-
     return element;
 }
 
@@ -94,7 +84,6 @@ async function search() {
     searchBtn.disabled = true;
     resultsBox.innerHTML = "";
     updateStats(0, 0, 0);
-
     document.getElementById("progressBar").style.width = "0%";
     statusText.textContent = "Recherche en cours...";
 
@@ -129,21 +118,18 @@ function displayResults(data) {
     resultsBox.innerHTML = "";
 
     const platforms = data.platforms || [];
-
     let total = 0;
     let found = 0;
     let checked = 0;
 
     platforms.forEach(platform => {
         if (platform.status !== "error") checked++;
-
         total += platform.results.length;
 
         if (platform.results.length > 0) found++;
 
         const card = createElement("article", "platform-card");
         const header = createElement("div", "platform-header");
-
         const name = createElement("strong", "", platform.name);
 
         let badgeText = "Aucun résultat";
@@ -190,15 +176,10 @@ function displayResults(data) {
             const match = createElement(
                 "small",
                 result.possibleMatch ? "match-possible" : "match-unknown",
-                result.type || (
-                    result.possibleMatch
-                        ? "Profil possible"
-                        : "Résultat à vérifier"
-                )
+                result.type || "Résultat à vérifier"
             );
 
             const link = createElement("a", "", "OUVRIR ↗");
-
             link.href = result.url;
             link.target = "_blank";
             link.rel = "noopener noreferrer";
@@ -211,9 +192,76 @@ function displayResults(data) {
     });
 
     updateStats(total, found, checked);
-
     document.getElementById("progressBar").style.width = "100%";
 
     statusText.textContent =
         `${total} résultat(s) trouvé(s) sur ${checked} plateformes vérifiées.`;
 }
+
+// Afficher uniquement ton adresse IP publique.
+document.getElementById("ipBtn").addEventListener("click", async () => {
+    const button = document.getElementById("ipBtn");
+    const output = document.getElementById("ipAddress");
+
+    button.disabled = true;
+    output.textContent = "Récupération en cours...";
+
+    try {
+        const response = await fetch("https://api.ipify.org?format=json");
+
+        if (!response.ok) {
+            throw new Error("Service indisponible.");
+        }
+
+        const data = await response.json();
+
+        if (!/^[0-9a-fA-F:.]+$/.test(data.ip || "")) {
+            throw new Error("Adresse IP invalide.");
+        }
+
+        output.textContent = data.ip;
+
+    } catch (error) {
+        output.textContent = "Impossible de récupérer ton IP.";
+    } finally {
+        button.disabled = false;
+    }
+});
+
+// Demander à l'utilisateur de choisir un appareil Bluetooth.
+document.getElementById("bluetoothBtn").addEventListener("click", async () => {
+    const button = document.getElementById("bluetoothBtn");
+    const status = document.getElementById("bluetoothStatus");
+    const result = document.getElementById("bluetoothResult");
+
+    if (!navigator.bluetooth) {
+        status.textContent =
+            "Bluetooth Web non disponible dans ce navigateur.";
+        return;
+    }
+
+    button.disabled = true;
+    status.textContent = "Ouverture du sélecteur Bluetooth...";
+    result.textContent = "";
+
+    try {
+        const device = await navigator.bluetooth.requestDevice({
+            acceptAllDevices: true
+        });
+
+        status.textContent = "Appareil sélectionné";
+
+        const name = device.name || "Nom non communiqué";
+        result.textContent = "Nom : " + name;
+
+    } catch (error) {
+        if (error.name === "NotFoundError") {
+            status.textContent = "Aucun appareil sélectionné.";
+        } else {
+            status.textContent =
+                "Recherche annulée ou non autorisée.";
+        }
+    } finally {
+        button.disabled = false;
+    }
+});
