@@ -311,6 +311,116 @@ app.post("/api/search", async (req, res) => {
     }
 });
 
+function cleanPublicText(text) {
+    return String(text || "")
+        // Ne pas afficher d'e-mails personnels
+        .replace(/[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}/g, "[e-mail masqué]")
+        // Ne pas afficher de numéros de téléphone
+        .replace(/(?:\+?\d[\d\s().-]{7,}\d)/g, "[numéro masqué]")
+        .slice(0, 500);
+}
+
+app.post("/api/osint", async (req, res) => {
+    try {
+        const first = String(req.body.first || "").trim();
+        const last = String(req.body.last || "").trim();
+
+        const validName = /^[\p{L}\p{M}' -]{2,70}$/u;
+
+        if (!validName.test(first) || !validName.test(last)) {
+            return res.status(400).json({
+                error: "Nom ou prénom invalide."
+            });
+        }
+
+        if (!API_KEY) {
+            return res.status(500).json({
+                error: "Clé SERPAPI_KEY manquante."
+            });
+        }
+
+        const fullName = `"${first} ${last}"`;
+
+        const searches = [
+            {
+                category: "Articles et actualités",
+                query: `${fullName} actualité interview article`
+            },
+            {
+                category: "Informations professionnelles",
+                query: `${fullName} profession entreprise parcours`
+            },
+            {
+                category: "Sites et organisations officiels",
+                query: `${fullName} site officiel organisation`
+            },
+            {
+                category: "Profils professionnels publics",
+                query: `${fullName} profil professionnel`
+            }
+        ];
+
+        const groups = await Promise.all(
+            searches.map(async search => {
+                try {
+                    const results = await searchGoogle(search.query);
+
+                    return {
+                        category: search.category,
+                        results: results.map(item => ({
+                            title: cleanPublicText(item.title),
+                            description: cleanPublicText(item.snippet),
+                            url: item.link
+                        }))
+                        .filter(item => {
+                            try {
+                                const url = new URL(item.url);
+                                return ["http:", "https:"].includes(url.protocol);
+                            } catch {
+                                return false;
+                            }
+                        })
+                    };
+                } catch (error) {
+                    console.error("OSINT:", error.message);
+
+                    return {
+                        category: search.category,
+                        results: [],
+                        error: "Source temporairement indisponible."
+                    };
+                }
+            })
+        );
+
+        const seen = new Set();
+
+        for (const group of groups) {
+            group.results = group.results.filter(item => {
+                if (seen.has(item.url)) return false;
+                seen.add(item.url);
+                return true;
+            });
+        }
+
+        res.json({
+            name: `${first} ${last}`,
+            groups,
+            total: groups.reduce(
+                (sum, group) => sum + group.results.length,
+                0
+            )
+        });
+
+    } catch (error) {
+        console.error("OSINT ERROR:", error);
+
+        res.status(500).json({
+            error: "Erreur pendant la recherche OSINT."
+        });
+    }
+});
+
 app.listen(PORT, () => {
     console.log("PSEUDO.FINDER V9 actif sur le port " + PORT);
 });
