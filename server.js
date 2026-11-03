@@ -11,17 +11,17 @@ const API_KEY = process.env.SERPAPI_KEY;
 const PORT = process.env.PORT || 3000;
 
 const platforms = [
-    { name: "Instagram", domain: "instagram.com", type: "instagram" },
-    { name: "TikTok", domain: "tiktok.com", type: "tiktok" },
-    { name: "YouTube", domain: "youtube.com", type: "youtube" },
-    { name: "Twitch", domain: "twitch.tv", type: "twitch" },
-    { name: "Reddit", domain: "reddit.com", type: "reddit" },
-    { name: "GitHub", domain: "github.com", type: "github" },
-    { name: "X / Twitter", domain: "x.com", type: "twitter" },
-    { name: "Pinterest", domain: "pinterest.com", type: "pinterest" },
-    { name: "Facebook", domain: "facebook.com", type: "facebook" },
-    { name: "Roblox", domain: "roblox.com", type: "roblox" },
-    { name: "Steam", domain: "steamcommunity.com", type: "steam" }
+    { name: "Instagram", domain: "instagram.com" },
+    { name: "TikTok", domain: "tiktok.com" },
+    { name: "YouTube", domain: "youtube.com" },
+    { name: "Twitch", domain: "twitch.tv" },
+    { name: "Reddit", domain: "reddit.com" },
+    { name: "GitHub", domain: "github.com" },
+    { name: "X / Twitter", domain: "x.com" },
+    { name: "Pinterest", domain: "pinterest.com" },
+    { name: "Facebook", domain: "facebook.com" },
+    { name: "Roblox", domain: "roblox.com" },
+    { name: "Steam", domain: "steamcommunity.com" }
 ];
 
 app.get("/", (req, res) => {
@@ -35,53 +35,51 @@ function normalize(value) {
         .replace(/[^a-z0-9]/g, "");
 }
 
-
-function isProfile(platform, url, pseudo, title) {
+function looksLikeProfile(platform, url, pseudo) {
     const parts = url.pathname.split("/").filter(Boolean);
     const wanted = normalize(pseudo);
-    const segments = parts.map(normalize);
-    const titleMatch = normalize(title).includes(wanted);
 
     if (!parts.length) return false;
 
-    switch (platform.type) {
-        case "instagram":
-        case "twitch":
-        case "github":
-        case "twitter":
-        case "pinterest":
-        case "facebook":
-            return parts.length === 1 && segments[0] === wanted;
+    const first = normalize(parts[0]);
 
-        case "tiktok":
-            return parts.length >= 1 &&
-                parts[0].startsWith("@") &&
-                segments[0] === wanted;
+    const blocked = [
+        "search", "explore", "videos", "video",
+        "reels", "reel", "p", "posts", "watch",
+        "shorts", "feed", "hashtag", "tags"
+    ];
 
-        case "youtube":
+    if (blocked.includes(first)) return false;
+
+    switch (platform) {
+        case "Instagram":
+        case "Twitch":
+        case "GitHub":
+        case "X / Twitter":
+        case "Pinterest":
+        case "Facebook":
+            return parts.length === 1;
+
+        case "TikTok":
+            return parts[0].startsWith("@");
+
+        case "YouTube":
             return (
-                (parts[0].startsWith("@") && segments[0] === wanted) ||
-                (["user", "c"].includes(parts[0].toLowerCase()) &&
-                    segments[1] === wanted) ||
-                (parts[0] === "channel" && titleMatch)
+                parts[0].startsWith("@") ||
+                ["channel", "user", "c"].includes(first)
             );
 
-        case "reddit":
+        case "Reddit":
             return parts.length >= 2 &&
-                ["user", "u"].includes(parts[0].toLowerCase()) &&
-                segments[1] === wanted;
+                ["user", "u"].includes(first);
 
-        case "roblox":
+        case "Roblox":
             return parts.length >= 3 &&
-                parts[0] === "users" &&
-                parts[2] === "profile" &&
-                titleMatch;
+                first === "users" &&
+                parts[2] === "profile";
 
-        case "steam":
-            return (
-                (parts[0] === "id" && segments[1] === wanted) ||
-                (parts[0] === "profiles" && titleMatch)
-            );
+        case "Steam":
+            return ["id", "profiles"].includes(first);
 
         default:
             return false;
@@ -101,39 +99,62 @@ async function searchPlatform(platform, pseudo) {
 
     const response = await fetch(
         "https://serpapi.com/search.json?" + params,
-        { signal: AbortSignal.timeout(20000) }
+        { signal: AbortSignal.timeout(25000) }
     );
 
     const data = await response.json();
 
     if (!response.ok || data.error) {
-        throw new Error(data.error || "Erreur API");
+        throw new Error(data.error || "Erreur SerpApi");
     }
 
-    const results = (data.organic_results || [])
+    const rawResults = data.organic_results || [];
+
+    console.log(
+        platform.name,
+        "Résultats Google :",
+        rawResults.length
+    );
+
+    const results = rawResults
         .filter(item => {
             try {
                 const url = new URL(item.link);
 
                 const validDomain =
                     url.hostname === platform.domain ||
-                    url.hostname.endsWith("." + platform.domain) ||
-                    (platform.type === "twitter" &&
-                     (url.hostname === "twitter.com" ||
-                      url.hostname.endsWith(".twitter.com")));
+                    url.hostname.endsWith("." + platform.domain);
 
-                return validDomain &&
-                    isProfile(platform, url, pseudo, item.title || "");
+                return validDomain;
             } catch {
                 return false;
             }
         })
-        .map(item => ({
-            title: item.title || "Profil trouvé",
-            description: item.snippet || "",
-            url: item.link,
-            possibleMatch: true
-        }));
+        .map(item => {
+            const url = new URL(item.link);
+
+            const profile = looksLikeProfile(
+                platform.name,
+                url,
+                pseudo
+            );
+
+            return {
+                title: item.title || "Page trouvée",
+                description: item.snippet || "",
+                url: item.link,
+                possibleMatch: profile,
+                type: profile
+                    ? "Profil possible"
+                    : "Mention ou publication"
+            };
+        });
+
+    console.log(
+        platform.name,
+        "Résultats conservés :",
+        results.length
+    );
 
     return {
         name: platform.name,
@@ -168,9 +189,15 @@ app.post("/api/search", async (req, res) => {
                 const platform = platforms[index];
 
                 try {
-                    output[index] = await searchPlatform(platform, pseudo);
+                    output[index] = await searchPlatform(
+                        platform,
+                        pseudo
+                    );
                 } catch (error) {
-                    console.error(platform.name, error.message);
+                    console.error(
+                        platform.name,
+                        error.message
+                    );
 
                     output[index] = {
                         name: platform.name,
@@ -183,7 +210,11 @@ app.post("/api/search", async (req, res) => {
             }
         }
 
-        await Promise.all([worker(), worker(), worker()]);
+        await Promise.all([
+            worker(),
+            worker(),
+            worker()
+        ]);
 
         const totalResults = output.reduce(
             (sum, item) => sum + item.results.length,
@@ -194,7 +225,9 @@ app.post("/api/search", async (req, res) => {
             pseudo,
             platforms: output,
             totalResults,
-            checked: output.filter(item => item.status !== "error").length,
+            checked: output.filter(
+                item => item.status !== "error"
+            ).length,
             foundPlatforms: output.filter(
                 item => item.results.length > 0
             ).length
@@ -202,6 +235,7 @@ app.post("/api/search", async (req, res) => {
 
     } catch (error) {
         console.error(error);
+
         res.status(500).json({
             error: "Erreur serveur."
         });
@@ -209,5 +243,7 @@ app.post("/api/search", async (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log("PSEUDO.FINDER V6 actif sur le port " + PORT);
+    console.log(
+        "PSEUDO.FINDER V7 actif sur le port " + PORT
+    );
 });
