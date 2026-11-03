@@ -10,10 +10,13 @@ const resultsBox = document.getElementById("results");
 
 let currentMode = "pseudo";
 
+
 function showPage(page) {
     home.classList.add("hidden");
     searchPage.classList.add("hidden");
     networkPage.classList.add("hidden");
+    osintPage.classList.add("hidden");
+
     page.classList.remove("hidden");
 }
 
