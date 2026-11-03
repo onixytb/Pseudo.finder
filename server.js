@@ -38,60 +38,65 @@ function normalize(value) {
 function isProfile(platform, url, pseudo, title) {
     const parts = url.pathname.split("/").filter(Boolean);
     const wanted = normalize(pseudo);
+    const first = normalize(parts[0] || "");
+    const titleMatch = normalize(title).includes(wanted);
 
     if (!parts.length) return false;
 
     switch (platform.type) {
         case "instagram":
             return parts.length === 1 &&
-                normalize(parts[0]) === wanted;
+                first === wanted &&
+                !["p", "reel", "explore", "accounts"].includes(first);
 
         case "tiktok":
-            return parts.length === 1 &&
-                parts[0].startsWith("@") &&
-                normalize(parts[0]) === wanted;
+            return parts[0].startsWith("@") &&
+                first === wanted;
 
         case "youtube":
-            return parts.length === 1 &&
-                parts[0].startsWith("@") &&
-                normalize(parts[0]) === wanted;
+            return (
+                (parts[0].startsWith("@") && first === wanted) ||
+                (["user", "c"].includes(parts[0]) && first === wanted) ||
+                (parts[0] === "channel" && titleMatch)
+            );
 
         case "twitch":
             return parts.length === 1 &&
-                normalize(parts[0]) === wanted;
+                first === wanted &&
+                !["directory", "videos", "downloads"].includes(first);
 
         case "reddit":
-            return parts.length === 2 &&
+            return parts.length >= 2 &&
                 ["user", "u"].includes(parts[0].toLowerCase()) &&
                 normalize(parts[1]) === wanted;
 
         case "github":
-            return parts.length === 1 &&
-                normalize(parts[0]) === wanted;
+            return parts.length === 1 && first === wanted;
 
         case "twitter":
             return parts.length === 1 &&
-                normalize(parts[0]) === wanted;
+                first === wanted &&
+                !["search", "explore", "home", "settings"].includes(first);
 
         case "pinterest":
-            return parts.length === 1 &&
-                normalize(parts[0]) === wanted;
+            return parts.length >= 1 &&
+                first === wanted;
 
         case "facebook":
             return parts.length === 1 &&
-                normalize(parts[0]) === wanted;
+                first === wanted;
 
         case "roblox":
-            return parts.length === 3 &&
+            return parts.length >= 3 &&
                 parts[0] === "users" &&
                 parts[2] === "profile" &&
-                normalize(title).includes(wanted);
+                titleMatch;
 
         case "steam":
-            return parts.length === 2 &&
-                ["id", "profiles"].includes(parts[0]) &&
-                (normalize(parts[1]) === wanted ||
-                 (parts[0] === "id" && normalize(parts[1]) === wanted));
+            return (
+                (parts[0] === "id" && first === wanted) ||
+                (parts[0] === "profiles" && titleMatch)
+            );
 
         default:
             return false;
@@ -101,7 +106,7 @@ function isProfile(platform, url, pseudo, title) {
 async function searchPlatform(platform, pseudo) {
     const params = new URLSearchParams({
         engine: "google",
-        q: `site:${platform.domain} "${pseudo}"`,
+        q: `site:${platform.domain} ${pseudo}`,
         api_key: API_KEY,
         gl: "fr",
         hl: "fr",
@@ -129,7 +134,8 @@ async function searchPlatform(platform, pseudo) {
                     url.hostname === platform.domain ||
                     url.hostname.endsWith("." + platform.domain) ||
                     (platform.type === "twitter" &&
-                     ["twitter.com", "www.twitter.com"].includes(url.hostname));
+                     (url.hostname === "twitter.com" ||
+                      url.hostname.endsWith(".twitter.com")));
 
                 return validDomain &&
                     isProfile(platform, url, pseudo, item.title || "");
@@ -138,7 +144,7 @@ async function searchPlatform(platform, pseudo) {
             }
         })
         .map(item => ({
-            title: item.title || "Profil sans titre",
+            title: item.title || "Profil trouvé",
             description: item.snippet || "",
             url: item.link,
             possibleMatch: true
@@ -218,5 +224,5 @@ app.post("/api/search", async (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log("PSEUDO.FINDER V5 actif sur le port " + PORT);
+    console.log("PSEUDO.FINDER V6 actif sur le port " + PORT);
 });
