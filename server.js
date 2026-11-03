@@ -35,56 +35,41 @@ function normalize(value) {
         .replace(/[^a-z0-9]/g, "");
 }
 
+
 function isProfile(platform, url, pseudo, title) {
     const parts = url.pathname.split("/").filter(Boolean);
     const wanted = normalize(pseudo);
-    const first = normalize(parts[0] || "");
+    const segments = parts.map(normalize);
     const titleMatch = normalize(title).includes(wanted);
 
     if (!parts.length) return false;
 
     switch (platform.type) {
         case "instagram":
-            return parts.length === 1 &&
-                first === wanted &&
-                !["p", "reel", "explore", "accounts"].includes(first);
+        case "twitch":
+        case "github":
+        case "twitter":
+        case "pinterest":
+        case "facebook":
+            return parts.length === 1 && segments[0] === wanted;
 
         case "tiktok":
-            return parts[0].startsWith("@") &&
-                first === wanted;
+            return parts.length >= 1 &&
+                parts[0].startsWith("@") &&
+                segments[0] === wanted;
 
         case "youtube":
             return (
-                (parts[0].startsWith("@") && first === wanted) ||
-                (["user", "c"].includes(parts[0]) && first === wanted) ||
+                (parts[0].startsWith("@") && segments[0] === wanted) ||
+                (["user", "c"].includes(parts[0].toLowerCase()) &&
+                    segments[1] === wanted) ||
                 (parts[0] === "channel" && titleMatch)
             );
-
-        case "twitch":
-            return parts.length === 1 &&
-                first === wanted &&
-                !["directory", "videos", "downloads"].includes(first);
 
         case "reddit":
             return parts.length >= 2 &&
                 ["user", "u"].includes(parts[0].toLowerCase()) &&
-                normalize(parts[1]) === wanted;
-
-        case "github":
-            return parts.length === 1 && first === wanted;
-
-        case "twitter":
-            return parts.length === 1 &&
-                first === wanted &&
-                !["search", "explore", "home", "settings"].includes(first);
-
-        case "pinterest":
-            return parts.length >= 1 &&
-                first === wanted;
-
-        case "facebook":
-            return parts.length === 1 &&
-                first === wanted;
+                segments[1] === wanted;
 
         case "roblox":
             return parts.length >= 3 &&
@@ -94,7 +79,7 @@ function isProfile(platform, url, pseudo, title) {
 
         case "steam":
             return (
-                (parts[0] === "id" && first === wanted) ||
+                (parts[0] === "id" && segments[1] === wanted) ||
                 (parts[0] === "profiles" && titleMatch)
             );
 
