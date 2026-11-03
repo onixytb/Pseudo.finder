@@ -1,10 +1,175 @@
 
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: #080b11;
+    color: #f5f7fa;
+    font-family: Arial, sans-serif;
+    min-height: 100vh;
+    padding: 35px 16px;
+}
+
+.container {
+    width: 100%;
+    max-width: 850px;
+    margin: auto;
+}
+
+header {
+    text-align: center;
+    padding: 65px 0 50px;
+}
+
+header h1 {
+    font-size: 38px;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+
+header h1 span {
+    color: #35e69a;
+}
+
+header p {
+    color: #8993a3;
+    font-size: 13px;
+    letter-spacing: 5px;
+    margin-top: 20px;
+}
+
+header small {
+    display: block;
+    color: #35e69a;
+    font-size: 16px;
+    margin-top: 22px;
+}
+
+.search-box {
+    background: #151b26;
+    border: 1px solid #293342;
+    border-radius: 17px;
+    padding: 21px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 23px;
+    border-radius: 12px;
+    border: 1px solid #354052;
+    background: #080b11;
+    color: white;
+    font-size: 19px;
+    outline: none;
+}
+
+.search-box input:focus {
+    border-color: #35e69a;
+}
+
+.search-box button {
+    width: 100%;
+    padding: 23px;
+    border: none;
+    border-radius: 12px;
+    background: #35e69a;
+    color: #07120d;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.search-box button:hover {
+    background: #24ca83;
+}
+
+.search-box button:disabled {
+    opacity: 0.5;
+    cursor: wait;
+}
+
+#status {
+    color: #35e69a;
+    text-align: center;
+    margin: 30px 0 18px;
+    font-size: 16px;
+}
+
+.progress {
+    width: 100%;
+    height: 7px;
+    background: #202735;
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+#progressBar {
+    height: 100%;
+    width: 0%;
+    background: #35e69a;
+    border-radius: 20px;
+    transition: width 0.4s;
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 13px;
+    margin: 35px 0 48px;
+}
+
+.stats div {
+    background: #151b26;
+    border-radius: 14px;
+    padding: 23px 8px;
+    text-align: center;
+    min-width: 0;
+}
+
+.stats strong {
+    display: block;
+    color: #35e69a;
+    font-size: 32px;
+    margin-bottom: 9px;
+}
+
+.stats span {
+    display: block;
+    color: #8993a3;
+    font-size: 10px;
+    line-height: 1.5;
+}
+
+h3 {
+    color: #8993a3;
+    font-size: 17px;
+    letter-spacing: 3px;
+    margin-bottom: 25px;
+}
+
+.notice {
+    color: #8993a3;
+    font-size: 14px;
+    line-height: 1.8;
+    margin-top: 35px;
+    margin-bottom: 50px;
+}
+
+/* Résultats V4 */
+
 .platform-card {
     background: #151b26;
     border: 1px solid #293342;
     border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 13px;
+    padding: 17px;
+    margin-bottom: 15px;
 }
 
 .platform-header {
@@ -17,12 +182,12 @@
 }
 
 .platform-header strong {
-    font-size: 15px;
+    font-size: 16px;
 }
 
 .status-badge {
     font-size: 10px;
-    padding: 7px 9px;
+    padding: 7px 10px;
     border-radius: 20px;
 }
 
@@ -43,24 +208,25 @@
 
 .result-item {
     border-top: 1px solid #293342;
-    padding: 13px 0;
+    padding: 15px 0;
 }
 
 .result-item strong {
-    font-size: 13px;
+    font-size: 14px;
+    line-height: 1.5;
 }
 
 .result-item p {
     color: #8994a4;
     font-size: 12px;
-    margin: 8px 0;
-    line-height: 1.5;
+    margin: 9px 0;
+    line-height: 1.6;
 }
 
 .result-item small {
     display: block;
-    margin-bottom: 10px;
-    font-size: 10px;
+    margin-bottom: 12px;
+    font-size: 11px;
 }
 
 .match-possible {
@@ -77,9 +243,46 @@
     text-decoration: none;
     font-size: 12px;
     font-weight: bold;
+    margin-top: 5px;
 }
 
 .platform-message {
     color: #ff8585;
     font-size: 12px;
+    margin-top: 10px;
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 20px 15px;
+    }
+
+    header {
+        padding: 65px 0 50px;
+    }
+
+    header h1 {
+        font-size: 32px;
+    }
+
+    header p {
+        font-size: 10px;
+        letter-spacing: 4px;
+    }
+
+    .stats {
+        gap: 9px;
+    }
+
+    .stats div {
+        padding: 20px 5px;
+    }
+
+    .stats strong {
+        font-size: 28px;
+    }
+
+    .stats span {
+        font-size: 9px;
+    }
 }
