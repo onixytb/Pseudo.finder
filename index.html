@@ -1,0 +1,57 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PSEUDO.FINDER V3</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <main class="container">
+        <header>
+            <h1>PSEUDO<span>.FINDER</span></h1>
+            <p>PUBLIC USERNAME SEARCH</p>
+            <small>VERSION 3.0</small>
+        </header>
+
+        <section class="search-box">
+            <input id="pseudo" maxlength="50"
+                placeholder="Entre un pseudo...">
+            <button id="searchBtn">LANCER LA RECHERCHE ↗</button>
+        </section>
+
+        <p id="status">En attente d'une recherche...</p>
+
+        <div class="progress">
+            <div id="progressBar"></div>
+        </div>
+
+        <section class="stats">
+            <div>
+                <strong id="total">0</strong>
+                <span>RÉSULTATS</span>
+            </div>
+            <div>
+                <strong id="found">0</strong>
+                <span>TROUVÉS</span>
+            </div>
+            <div>
+                <strong id="checked">0</strong>
+                <span>SITES</span>
+            </div>
+        </section>
+
+        <h3>RÉSULTATS PUBLICS</h3>
+        <div id="results"></div>
+
+        <p class="notice">
+            Les résultats proviennent de pages publiques indexées.
+            Ils ne confirment pas à eux seuls l'existence actuelle
+            d'un compte.
+        </p>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
