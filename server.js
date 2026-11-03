@@ -35,6 +35,7 @@ function normalize(value) {
         .replace(/[^a-z0-9]/g, "");
 }
 
+
 function isProfile(platform, url, pseudo) {
     const parts = url.pathname.split("/").filter(Boolean);
     const wanted = normalize(pseudo);
@@ -45,16 +46,31 @@ function isProfile(platform, url, pseudo) {
     const second = normalize(parts[1] || "");
 
     switch (platform) {
+        case "YouTube":
+            if (parts.length === 1) {
+                return first === wanted;
+            }
+
+            if (
+                parts.length === 2 &&
+                ["@", "c", "user"].some(prefix =>
+                    parts[0].toLowerCase().startsWith(prefix)
+                )
+            ) {
+                return second === wanted;
+            }
+
+            return false;
+
         case "Instagram":
-            return parts.length === 1 &&
-                first === wanted;
+        case "Twitch":
+        case "GitHub":
+        case "X / Twitter":
+        case "Pinterest":
+        case "Facebook":
+            return parts.length === 1 && first === wanted;
 
         case "TikTok":
-            return parts.length === 1 &&
-                parts[0].startsWith("@") &&
-                first === wanted;
-
-        case "YouTube":
             return parts.length === 1 &&
                 parts[0].startsWith("@") &&
                 first === wanted;
@@ -64,43 +80,10 @@ function isProfile(platform, url, pseudo) {
                 ["user", "u"].includes(parts[0].toLowerCase()) &&
                 second === wanted;
 
-        case "X / Twitter":
-            return parts.length === 1 &&
-                first === wanted &&
-                !["home", "explore", "search", "settings"].includes(first);
-
-        case "Twitch":
-            return parts.length === 1 &&
-                first === wanted &&
-                !["directory", "videos", "downloads"].includes(first);
-
-        case "GitHub":
-            return parts.length === 1 &&
-                first === wanted &&
-                !["search", "features", "topics", "settings"].includes(first);
-
-        case "Pinterest":
-            return parts.length === 1 &&
-                first === wanted;
-
-        case "Facebook":
-            return parts.length === 1 &&
-                first === wanted;
-
         case "Steam":
-            return (
-                (parts.length === 2 &&
-                    parts[0] === "id" &&
-                    second === wanted) ||
-                (parts.length === 2 &&
-                    parts[0] === "profiles" &&
-                    second === wanted)
-            );
-
-        case "Roblox":
-            return parts.length === 3 &&
-                parts[0] === "users" &&
-                parts[2] === "profile";
+            return parts.length === 2 &&
+                parts[0] === "id" &&
+                second === wanted;
 
         default:
             return false;
