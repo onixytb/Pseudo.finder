@@ -2,164 +2,145 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>PSEUDO.FINDER</title>
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#080b11">
+<title>PSEUDO.FINDER V12</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-<main class="container">
 
-    <header>
-        <h1>PSEUDO<span>.FINDER</span></h1>
-        <p>PUBLIC SEARCH ENGINE</p>
-        <small>VERSION 10.0</small>
+<div class="app">
+    <header class="topbar">
+        <a class="logo" href="#" id="logoHome">
+            PSEUDO<span>.FINDER</span>
+        </a>
+        <div class="version">V12.0</div>
     </header>
 
     <section id="home">
-        <h2>Que veux-tu faire ?</h2>
-        <p class="subtitle">Choisis un outil.</p>
+        <div class="hero">
+            <div class="online"><span></span> SYSTEM ONLINE</div>
+            <h1>RESEARCH<br><span>EVERYTHING.</span></h1>
+            <p>Ta plateforme de recherche numérique.</p>
+        </div>
 
-        <button class="choice-card" id="pseudoChoice">
-            <span class="choice-icon">⌕</span>
-            <span>
-                <strong>Recherche de pseudo</strong>
-                <small>Recherche des profils sur les réseaux sociaux.</small>
-            </span>
-            <b>↗</b>
-        </button>
+        <div class="section-title">RESEARCH TOOLS</div>
+        <div class="tool-grid">
 
-        <button class="choice-card" id="generalChoice">
-            <span class="choice-icon">◎</span>
-            <span>
-                <strong>Recherche générale</strong>
-                <small>Recherche un sujet sur plusieurs plateformes.</small>
-            </span>
-            <b>↗</b>
-        </button>
+            <button class="tool" data-page="pseudo">
+                <span class="tool-icon">⌕</span>
+                <strong>PSEUDO.FINDER</strong>
+                <small>Recherche de profils</small>
+                <b>↗</b>
+            </button>
 
-        <button class="choice-card" id="networkChoice">
-            <span class="choice-icon">⌁</span>
-            <span>
+            <button class="tool" data-page="general">
+                <span class="tool-icon">◎</span>
+                <strong>GENERAL SEARCH</strong>
+                <small>Recherche multi-sites</small>
+                <b>↗</b>
+            </button>
+
+            <button class="tool" data-page="osint">
+                <span class="tool-icon">⌘</span>
+                <strong>OSINT.FINDER</strong>
+                <small>Sources publiques</small>
+                <b>↗</b>
+            </button>
+
+            <button class="tool" data-page="network">
+                <span class="tool-icon">⌁</span>
                 <strong>NETWORK.FINDER</strong>
-                <small>Informations sur ta connexion et appareils Bluetooth.</small>
-            </span>
-            <b>↗</b>
-        </button>
+                <small>Informations réseau</small>
+                <b>↗</b>
+            </button>
 
+            <button class="tool" data-page="domain">
+                <span class="tool-icon">🌐</span>
+                <strong>DOMAIN.FINDER</strong>
+                <small>Analyse DNS</small>
+                <b>↗</b>
+            </button>
 
-<button class="choice-card" id="osintChoice">
-    <span class="choice-icon">⌕</span>
-    <span>
-        <strong>OSINT.FINDER</strong>
-        <small>Recherche d'informations issues de sources publiques.</small>
-    </span>
-    <b>↗</b>
-</button>
+            <button class="tool" data-page="ip">
+                <span class="tool-icon">⌗</span>
+                <strong>IP.LOOKUP</strong>
+                <small>Informations sur ton IP</small>
+                <b>↗</b>
+            </button>
+
+            <button class="tool" data-page="url">
+                <span class="tool-icon">↗</span>
+                <strong>URL.ANALYZER</strong>
+                <small>Analyse de liens</small>
+                <b>↗</b>
+            </button>
+
+            <button class="tool" data-page="history">
+                <span class="tool-icon">◷</span>
+                <strong>HISTORY</strong>
+                <small>Historique des recherches</small>
+                <b>↗</b>
+            </button>
+        </div>
+
+        <div class="footer">
+            PSEUDO.FINDER © 2026 — RESEARCH TOOLKIT
+        </div>
     </section>
 
-    <section id="searchPage" class="hidden">
-        <button class="back-button" id="backBtn">← RETOUR À L'ACCUEIL</button>
-
-        <h2 id="searchTitle">Recherche</h2>
-        <p class="subtitle" id="searchDescription"></p>
-
-        <div class="search-box">
-            <input id="searchInput" maxlength="150"
-                   placeholder="Entre ta recherche...">
-            <button id="searchBtn">LANCER LA RECHERCHE ↗</button>
+    <section id="workspace" class="hidden">
+        <button class="back" id="back">← ACCUEIL</button>
+        <div class="page-heading">
+            <div class="online"><span></span> TOOL ACTIVE</div>
+            <h2 id="pageTitle"></h2>
+            <p id="pageDescription"></p>
         </div>
 
-        <p id="status">En attente d'une recherche...</p>
-
-        <div class="progress">
-            <div id="progressBar"></div>
+        <div id="searchForm" class="panel hidden">
+            <input id="query" placeholder="Ta recherche..." maxlength="150">
+            <div id="nameFields" class="hidden">
+                <input id="firstName" placeholder="Prénom" maxlength="70">
+                <input id="lastName" placeholder="Nom" maxlength="70">
+            </div>
+            <button id="runSearch" class="primary">LANCER LA RECHERCHE ↗</button>
         </div>
 
-        <section class="stats">
-            <div>
-                <strong id="total">0</strong>
-                <span>PAGES TROUVÉES</span>
-            </div>
-            <div>
-                <strong id="found">0</strong>
-                <span>PLATEFORMES AVEC RÉSULTATS</span>
-            </div>
-            <div>
-                <strong id="checked">0</strong>
-                <span>RECHERCHES RÉUSSIES</span>
-            </div>
-        </section>
-
-        <h3>RÉSULTATS</h3>
-        <div id="results"></div>
-    </section>
-
-    <section id="networkPage" class="hidden">
-        <button class="back-button" id="networkBackBtn">
-            ← RETOUR À L'ACCUEIL
-        </button>
-
-        <h2>NETWORK.FINDER</h2>
-        <p class="subtitle">
-            Informations sur ta connexion et appareils détectables.
-        </p>
-
-        <div class="network-card">
-            <div class="network-icon">◎</div>
-            <h3>ADRESSE IP PUBLIQUE</h3>
-            <p id="ipAddress">Non récupérée</p>
-            <button id="ipBtn">AFFICHER MON IP</button>
+        <div id="domainForm" class="panel hidden">
+            <input id="domainInput" placeholder="exemple.com" maxlength="253">
+            <button id="domainBtn" class="primary">ANALYSER LE DOMAINE ↗</button>
         </div>
 
-        <div class="network-card">
-            <div class="network-icon">⌁</div>
+        <div id="urlForm" class="panel hidden">
+            <input id="urlInput" placeholder="https://exemple.com" maxlength="2000">
+            <button id="urlBtn" class="primary">ANALYSER LE LIEN ↗</button>
+        </div>
+
+        <div id="ipPanel" class="panel hidden">
+            <p class="muted">Adresse IP publique de ta connexion actuelle</p>
+            <div id="myIP" class="big-value">Non récupérée</div>
+            <button id="ipBtn" class="primary">AFFICHER MON IP</button>
+        </div>
+
+        <div id="bluetoothPanel" class="panel hidden">
             <h3>BLUETOOTH</h3>
-            <p id="bluetoothStatus">
-                Recherche manuelle avec autorisation.
-            </p>
-            <button id="bluetoothBtn">RECHERCHER UN APPAREIL</button>
-            <div id="bluetoothResult"></div>
+            <p class="muted">Choisis un appareil Bluetooth compatible à proximité.</p>
+            <button id="bluetoothBtn" class="primary">RECHERCHER UN APPAREIL</button>
+            <div id="bluetoothResult" class="result-message"></div>
         </div>
 
-        <p class="network-notice">
-            Le navigateur ne peut pas scanner tous les appareils Wi-Fi
-            autour de toi ni afficher leurs adresses IP locales.
-            La recherche Bluetooth nécessite ton autorisation.
-        </p>
+        <div id="output">
+            <p id="status" class="status"></p>
+            <div id="results"></div>
+        </div>
+
+        <div id="historyPanel" class="hidden">
+            <button id="clearHistory" class="secondary">EFFACER L'HISTORIQUE</button>
+            <div id="historyList"></div>
+        </div>
     </section>
-
-<section id="osintPage" class="hidden">
-
-    <button class="back-button" id="osintBackBtn">
-        ← RETOUR À L'ACCUEIL
-    </button>
-
-    <h2>OSINT.FINDER</h2>
-    <p class="subtitle">
-        Recherche d'informations publiques et professionnelles.
-    </p>
-
-    <div class="search-box">
-        <input id="osintLast" placeholder="Nom de famille..." maxlength="70">
-        <input id="osintFirst" placeholder="Prénom..." maxlength="70">
-        <button id="osintBtn">LANCER LA RECHERCHE ↗</button>
-    </div>
-
-    <p id="osintStatus">En attente d'une recherche...</p>
-
-    <h3>SOURCES PUBLIQUES</h3>
-    <div id="osintResults"></div>
-
-    <p class="network-notice">
-        Les résultats peuvent concerner plusieurs personnes portant
-        le même nom. Vérifie toujours les sources. Seules les
-        informations publiques et non sensibles sont affichées.
-    </p>
-
-</section>
-
-</main>
+</div>
 
 <script src="script.js"></script>
 </body>
