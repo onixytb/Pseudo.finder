@@ -8,18 +8,17 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
 <main class="container">
 
     <header>
         <h1>PSEUDO<span>.FINDER</span></h1>
         <p>PUBLIC SEARCH ENGINE</p>
-        <small>VERSION 8.0</small>
+        <small>VERSION 10.0</small>
     </header>
 
     <section id="home">
-        <h2>Que veux-tu rechercher ?</h2>
-        <p class="subtitle">Choisis ton mode de recherche.</p>
+        <h2>Que veux-tu faire ?</h2>
+        <p class="subtitle">Choisis un outil.</p>
 
         <button class="choice-card" id="pseudoChoice">
             <span class="choice-icon">⌕</span>
@@ -35,6 +34,15 @@
             <span>
                 <strong>Recherche générale</strong>
                 <small>Recherche un sujet sur plusieurs plateformes.</small>
+            </span>
+            <b>↗</b>
+        </button>
+
+        <button class="choice-card" id="networkChoice">
+            <span class="choice-icon">⌁</span>
+            <span>
+                <strong>NETWORK.FINDER</strong>
+                <small>Informations sur ta connexion et appareils Bluetooth.</small>
             </span>
             <b>↗</b>
         </button>
@@ -73,12 +81,41 @@
             </div>
         </section>
 
-        <h3 id="resultsTitle">RÉSULTATS</h3>
+        <h3>RÉSULTATS</h3>
         <div id="results"></div>
+    </section>
 
-        <p class="notice">
-            Résultats issus de pages publiques indexées.
-            Ils ne garantissent pas l'existence ou l'actualité d'un compte.
+    <section id="networkPage" class="hidden">
+        <button class="back-button" id="networkBackBtn">
+            ← RETOUR À L'ACCUEIL
+        </button>
+
+        <h2>NETWORK.FINDER</h2>
+        <p class="subtitle">
+            Informations sur ta connexion et appareils détectables.
+        </p>
+
+        <div class="network-card">
+            <div class="network-icon">◎</div>
+            <h3>ADRESSE IP PUBLIQUE</h3>
+            <p id="ipAddress">Non récupérée</p>
+            <button id="ipBtn">AFFICHER MON IP</button>
+        </div>
+
+        <div class="network-card">
+            <div class="network-icon">⌁</div>
+            <h3>BLUETOOTH</h3>
+            <p id="bluetoothStatus">
+                Recherche manuelle avec autorisation.
+            </p>
+            <button id="bluetoothBtn">RECHERCHER UN APPAREIL</button>
+            <div id="bluetoothResult"></div>
+        </div>
+
+        <p class="network-notice">
+            Le navigateur ne peut pas scanner tous les appareils Wi-Fi
+            autour de toi ni afficher leurs adresses IP locales.
+            La recherche Bluetooth nécessite ton autorisation.
         </p>
     </section>
 
