@@ -1,300 +1,78 @@
-
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#080b11">
-    <title>PSEUDO.FINDER V12</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-
-<div class="app">
-    <header class="topbar">
-        <a class="logo" href="#" id="logoHome">
-            PSEUDO<span>.FINDER</span>
-        </a>
-
-        <div class="header-actions">
-            <div class="version">V12.0</div>
-            <a class="plans-shortcut" href="#plans">ABONNEMENTS</a>
-            <button id="accountButton" class="account-button">
-                MON COMPTE
-            </button>
-        </div>
-    </header>
-
-    <section id="home">
-        <div class="hero">
-            <div class="online"><span></span> SYSTEM ONLINE</div>
-            <h1>RESEARCH<br><span>EVERYTHING.</span></h1>
-            <p>Ta plateforme de recherche numérique.</p>
-        </div>
-
-        <div class="section-title">RESEARCH TOOLS</div>
-
-        <div class="tool-grid">
-            <button class="tool" data-page="pseudo">
-                <span class="tool-icon">⌕</span>
-                <strong>PSEUDO.FINDER</strong>
-                <small>Recherche de profils</small>
-                <b>↗</b>
-            </button>
-
-            <button class="tool" data-page="general">
-                <span class="tool-icon">◎</span>
-                <strong>GENERAL SEARCH</strong>
-                <small>Recherche multi-sites</small>
-                <b>↗</b>
-            </button>
-
-            <button class="tool" data-page="osint">
-                <span class="tool-icon">⌘</span>
-                <strong>OSINT.FINDER</strong>
-                <small>Sources publiques</small>
-                <b>↗</b>
-            </button>
-
-            <button class="tool" data-page="network">
-                <span class="tool-icon">⌁</span>
-                <strong>NETWORK.FINDER</strong>
-                <small>Informations réseau</small>
-                <b>↗</b>
-            </button>
-
-            <button class="tool" data-page="domain">
-                <span class="tool-icon">🌐</span>
-                <strong>DOMAIN.FINDER</strong>
-                <small>Analyse DNS</small>
-                <b>↗</b>
-            </button>
-
-            <button class="tool" data-page="ip">
-                <span class="tool-icon">⌗</span>
-                <strong>IP.LOOKUP</strong>
-                <small>Informations sur ton IP</small>
-                <b>↗</b>
-            </button>
-
-            <button class="tool" data-page="url">
-                <span class="tool-icon">↗</span>
-                <strong>URL.ANALYZER</strong>
-                <small>Analyse de liens</small>
-                <b>↗</b>
-            </button>
-
-            <button class="tool" data-page="history">
-                <span class="tool-icon">◷</span>
-                <strong>HISTORY</strong>
-                <small>Historique des recherches</small>
-                <b>↗</b>
-            </button>
-        </div>
-
-        <section id="plans" class="plans-section">
-            <div class="plans-heading">
-                <div class="online"><span></span> MEMBERSHIP</div>
-                <h2>CHOISIS TON <span>ACCÈS.</span></h2>
-                <p>Les offres PSEUDO.FINDER.</p>
-            </div>
-
-            <div class="plans-grid">
-                <article class="plan-card">
-                    <div class="plan-name">FREE</div>
-                    <div class="plan-price">0 € <small>/ mois</small></div>
-                    <p class="plan-description">
-                        Pour découvrir les outils essentiels.
-                    </p>
-                    <ul>
-                        <li>Accès aux fonctions gratuites</li>
-                        <li>Recherche de base</li>
-                    </ul>
-                    <a class="plan-button"
-   href="https://www.patreon.com/checkout/Pseudofinder?rid=29986347&is_free_trial=true"
-   target="_blank"
-   rel="noopener noreferrer">
-    S'ABONNER À PRO ↗
-</a>
-                </article>
-
-                <article class="plan-card plan-featured">
-                    <div class="plan-tag">RECOMMANDÉ</div>
-                    <div class="plan-name">PRO</div>
-                    <div class="plan-price">1,99 € <small>/ mois</small></div>
-                    <p class="plan-description">
-                        Pour une utilisation plus régulière.
-                    </p>
-                    <ul>
-                        <li>Avantages PRO à configurer sur Patreon</li>
-                        <li>Accès selon les conditions de l'offre</li>
-                    </ul>
-                    <a class="plan-button"
-   href="https://www.patreon.com/checkout/Pseudofinder?rid=29986362"
-   target="_blank"
-   rel="noopener noreferrer">
-    S'ABONNER À ULTIMATE ↗
-</a>
-                </article>
-
-                <article class="plan-card">
-                    <div class="plan-name">ULTIMATE</div>
-                    <div class="plan-price">4,99 € <small>/ mois</small></div>
-                    <p class="plan-description">
-                        Pour accéder à l'offre la plus complète.
-                    </p>
-                    <ul>
-                        <li>Avantages ULTIMATE à configurer sur Patreon</li>
-                        <li>Accès selon les conditions de l'offre</li>
-                    </ul>
-                    <a class="plan-button"
-                       href="https://patreon.com/Pseudofinder"
-                       target="_blank"
-                       rel="noopener noreferrer">
-                        VOIR ULTIMATE SUR PATREON ↗
-                    </a>
-                </article>
-            </div>
-
-            <p class="plans-note">
-                Les boutons ouvrent la page Patreon. L'achat d'une offre
-                ne débloque pas encore automatiquement les fonctions du site :
-                la synchronisation des membres devra être mise en place
-                et testée avant toute vente.
-            </p>
-        </section>
-
-        <div class="footer">
-            PSEUDO.FINDER © 2026 — RESEARCH TOOLKIT
-        </div>
-    </section>
-
-    <section id="workspace" class="hidden">
-        <button class="back" id="back">← ACCUEIL</button>
-
-        <div class="page-heading">
-            <div class="online"><span></span> TOOL ACTIVE</div>
-            <h2 id="pageTitle"></h2>
-            <p id="pageDescription"></p>
-        </div>
-
-        <div id="searchForm" class="panel hidden">
-            <input id="query" placeholder="Ta recherche..." maxlength="150">
-
-            <div id="nameFields" class="hidden">
-                <input id="firstName" placeholder="Prénom" maxlength="70">
-                <input id="lastName" placeholder="Nom" maxlength="70">
-            </div>
-
-            <button id="runSearch" class="primary">
-                LANCER LA RECHERCHE ↗
-            </button>
-        </div>
-
-        <div id="domainForm" class="panel hidden">
-            <input id="domainInput" placeholder="exemple.com" maxlength="253">
-            <button id="domainBtn" class="primary">
-                ANALYSER LE DOMAINE ↗
-            </button>
-        </div>
-
-        <div id="urlForm" class="panel hidden">
-            <input id="urlInput" placeholder="https://exemple.com" maxlength="2000">
-            <button id="urlBtn" class="primary">
-                ANALYSER LE LIEN ↗
-            </button>
-        </div>
-
-        <div id="ipPanel" class="panel hidden">
-            <p class="muted">
-                Adresse IP publique de ta connexion actuelle
-            </p>
-            <div id="myIP" class="big-value">Non récupérée</div>
-            <button id="ipBtn" class="primary">
-                AFFICHER MON IP
-            </button>
-        </div>
-
-        <div id="bluetoothPanel" class="panel hidden">
-            <h3>BLUETOOTH</h3>
-            <p class="muted">
-                Choisis un appareil Bluetooth compatible à proximité.
-            </p>
-            <button id="bluetoothBtn" class="primary">
-                RECHERCHER UN APPAREIL
-            </button>
-            <div id="bluetoothResult" class="result-message"></div>
-        </div>
-
-        <div id="output" class="hidden">
-            <p id="status" class="status"></p>
-            <div id="results"></div>
-        </div>
-
-        <div id="historyPanel" class="hidden">
-            <button id="clearHistory" class="secondary">
-                EFFACER L'HISTORIQUE
-            </button>
-            <div id="historyList"></div>
-        </div>
-    </section>
-</div>
-
-<div id="accountModal" class="account-modal hidden">
-    <div class="account-box">
-        <button id="closeAccount" class="account-close">×</button>
-
-        <div class="online"><span></span> ESPACE MEMBRE</div>
-
-        <h2 id="accountTitle">CONNEXION</h2>
-
-        <p class="account-description">
-            Connecte-toi à ton compte PSEUDO.FINDER.
-        </p>
-
-        <div id="accountForm">
-            <input
-                id="accountEmail"
-                type="email"
-                placeholder="Adresse e-mail"
-                autocomplete="email"
-                maxlength="254"
-            >
-
-            <input
-                id="accountPassword"
-                type="password"
-                placeholder="Mot de passe (8 caractères minimum)"
-                autocomplete="current-password"
-                minlength="8"
-                maxlength="128"
-            >
-
-            <button id="accountSubmit" class="primary">
-                SE CONNECTER
-            </button>
-        </div>
-
-        <p id="accountMessage" class="account-message"></p>
-
-        <button id="accountSwitch" class="account-switch">
-            Pas encore de compte ? Créer un compte
-        </button>
-
-        <div id="accountConnected" class="hidden">
-            <p class="muted">Connecté avec :</p>
-            <p id="accountUserEmail" class="account-user-email"></p>
-
-            <button id="accountLogout" class="primary">
-                SE DÉCONNECTER
-            </button>
-        </div>
+<section id="plans" class="plans-section">
+    <div class="plans-heading">
+        <div class="online"><span></span> MEMBERSHIP</div>
+        <h2>CHOISIS TON <span>ACCÈS.</span></h2>
+        <p>Les offres PSEUDO.FINDER.</p>
     </div>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="script.js"></script>
-<script src="auth.js"></script>
+    <div class="plans-grid">
+        <article class="plan-card">
+            <div class="plan-name">FREE</div>
+            <div class="plan-price">0 € <small>/ mois</small></div>
+            <p class="plan-description">Pour découvrir les outils essentiels.</p>
+            <ul>
+                <li>Accès aux fonctions gratuites</li>
+                <li>Recherche de base</li>
+            </ul>
+            <a class="plan-button plan-free" href="#home">
+                OFFRE GRATUITE
+            </a>
+        </article>
 
-</body>
-</html>
+        <article class="plan-card plan-featured">
+            <div class="plan-tag">RECOMMANDÉ</div>
+            <div class="plan-name">PRO</div>
+            <div class="plan-price">2 € <small>/ mois</small></div>
+            <p class="plan-description">Pour une utilisation régulière.</p>
+            <ul>
+                <li>Historique illimité</li>
+                <li>Recherches étendues</li>
+                <li>Export PDF</li>
+            </ul>
+            <a class="plan-button"
+               href="https://www.patreon.com/checkout/Pseudofinder?rid=29986347&is_free_trial=true"
+               target="_blank" rel="noopener noreferrer">
+                S'ABONNER À PRO ↗
+            </a>
+        </article>
+
+        <article class="plan-card">
+            <div class="plan-name">ULTIMATE</div>
+            <div class="plan-price">5 € <small>/ mois</small></div>
+            <p class="plan-description">L'offre la plus complète.</p>
+            <ul>
+                <li>Tous les avantages PRO</li>
+                <li>Outils avancés</li>
+                <li>Historique avec filtres</li>
+            </ul>
+            <a class="plan-button"
+               href="https://www.patreon.com/checkout/Pseudofinder?rid=29986362"
+               target="_blank" rel="noopener noreferrer">
+                S'ABONNER À ULTIMATE ↗
+            </a>
+        </article>
+    </div>
+
+    <p class="plans-note">
+        Les abonnements Patreon et les accès du site ne sont pas encore
+        synchronisés automatiquement.
+    </p>
+
+    <div class="owner-access">
+        <div class="online"><span></span> PRIVATE ACCESS</div>
+        <h3>PLAN PROPRIÉTAIRE</h3>
+        <p>Entre ton code pour activer gratuitement l'accès OWNER.</p>
+
+        <div class="owner-form">
+            <input id="ownerCodeInput"
+                   type="password"
+                   placeholder="Code propriétaire"
+                   maxlength="30">
+            <button id="ownerCodeButton" type="button">
+                ENVOYER
+            </button>
+        </div>
+
+        <p id="ownerCodeMessage" class="owner-message"></p>
+    </div>
+</section>
