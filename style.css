@@ -76,6 +76,16 @@ body {
     cursor: pointer;
 }
 
+.plans-shortcut {
+    color: var(--green);
+    border: 1px solid #24563f;
+    padding: 10px 12px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 10px;
+    font-weight: bold;
+}
+
 .hero {
     padding: 55px 0 45px;
 }
@@ -171,6 +181,133 @@ body {
     right: 17px;
     top: 17px;
     color: var(--green);
+}
+
+.plans-section {
+    padding: 65px 0 20px;
+    scroll-margin-top: 20px;
+}
+
+.plans-heading {
+    margin-bottom: 22px;
+}
+
+.plans-heading h2 {
+    font-size: clamp(27px, 6vw, 42px);
+    letter-spacing: -1.5px;
+    margin-bottom: 10px;
+}
+
+.plans-heading h2 span {
+    color: var(--green);
+}
+
+.plans-heading p {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.plans-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 13px;
+}
+
+.plan-card {
+    background: linear-gradient(145deg, #162331, #0e151f);
+    border: 1px solid var(--border);
+    border-radius: 15px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.plan-featured {
+    border-color: var(--green);
+    box-shadow: 0 0 22px #35e69a12;
+}
+
+.plan-tag {
+    color: var(--green);
+    font-size: 10px;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+}
+
+.plan-name {
+    font-size: 15px;
+    font-weight: 900;
+    letter-spacing: 1px;
+}
+
+.plan-price {
+    color: var(--green);
+    font-size: 29px;
+    font-weight: 900;
+    margin: 17px 0 10px;
+    white-space: nowrap;
+}
+
+.plan-price small {
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: normal;
+}
+
+.plan-description {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.5;
+    min-height: 36px;
+}
+
+.plan-card ul {
+    list-style: none;
+    margin: 20px 0;
+    flex: 1;
+}
+
+.plan-card li {
+    color: #d6dee8;
+    font-size: 11px;
+    line-height: 1.5;
+    padding: 8px 0 8px 17px;
+    border-bottom: 1px solid #263548;
+    position: relative;
+}
+
+.plan-card li::before {
+    content: "✓";
+    color: var(--green);
+    position: absolute;
+    left: 0;
+}
+
+.plan-button {
+    display: block;
+    text-align: center;
+    background: var(--green);
+    color: #06130c;
+    border-radius: 9px;
+    padding: 13px 10px;
+    font-size: 10px;
+    line-height: 1.4;
+    font-weight: 900;
+    text-decoration: none;
+}
+
+.plan-free {
+    background: #202c3a;
+    color: var(--white);
+    border: 1px solid var(--border);
+}
+
+.plans-note {
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.6;
+    margin-top: 17px;
 }
 
 .footer {
@@ -334,8 +471,6 @@ input:focus {
     color: var(--muted);
 }
 
-/* COMPTE */
-
 .account-modal {
     position: fixed;
     inset: 0;
@@ -405,6 +540,16 @@ input:focus {
     margin: 15px 0 22px;
 }
 
+@media(max-width: 700px) {
+    .plans-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .plan-description {
+        min-height: 0;
+    }
+}
+
 @media(max-width: 420px) {
     .topbar {
         flex-wrap: wrap;
@@ -412,6 +557,10 @@ input:focus {
 
     .header-actions {
         flex-wrap: wrap;
+    }
+
+    .plans-shortcut {
+        padding: 9px;
     }
 }
 
