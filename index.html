@@ -18,6 +18,7 @@
 
         <div class="header-actions">
             <div class="version">V12.0</div>
+            <a class="plans-shortcut" href="#plans">ABONNEMENTS</a>
             <button id="accountButton" class="account-button">
                 MON COMPTE
             </button>
@@ -91,6 +92,75 @@
             </button>
         </div>
 
+        <section id="plans" class="plans-section">
+            <div class="plans-heading">
+                <div class="online"><span></span> MEMBERSHIP</div>
+                <h2>CHOISIS TON <span>ACCÈS.</span></h2>
+                <p>Les offres PSEUDO.FINDER.</p>
+            </div>
+
+            <div class="plans-grid">
+                <article class="plan-card">
+                    <div class="plan-name">FREE</div>
+                    <div class="plan-price">0 € <small>/ mois</small></div>
+                    <p class="plan-description">
+                        Pour découvrir les outils essentiels.
+                    </p>
+                    <ul>
+                        <li>Accès aux fonctions gratuites</li>
+                        <li>Recherche de base</li>
+                    </ul>
+                    <a class="plan-button plan-free" href="#home">
+                        OFFRE GRATUITE
+                    </a>
+                </article>
+
+                <article class="plan-card plan-featured">
+                    <div class="plan-tag">RECOMMANDÉ</div>
+                    <div class="plan-name">PRO</div>
+                    <div class="plan-price">1,99 € <small>/ mois</small></div>
+                    <p class="plan-description">
+                        Pour une utilisation plus régulière.
+                    </p>
+                    <ul>
+                        <li>Avantages PRO à configurer sur Patreon</li>
+                        <li>Accès selon les conditions de l'offre</li>
+                    </ul>
+                    <a class="plan-button"
+                       href="https://patreon.com/Pseudofinder"
+                       target="_blank"
+                       rel="noopener noreferrer">
+                        VOIR PRO SUR PATREON ↗
+                    </a>
+                </article>
+
+                <article class="plan-card">
+                    <div class="plan-name">ULTIMATE</div>
+                    <div class="plan-price">4,99 € <small>/ mois</small></div>
+                    <p class="plan-description">
+                        Pour accéder à l'offre la plus complète.
+                    </p>
+                    <ul>
+                        <li>Avantages ULTIMATE à configurer sur Patreon</li>
+                        <li>Accès selon les conditions de l'offre</li>
+                    </ul>
+                    <a class="plan-button"
+                       href="https://patreon.com/Pseudofinder"
+                       target="_blank"
+                       rel="noopener noreferrer">
+                        VOIR ULTIMATE SUR PATREON ↗
+                    </a>
+                </article>
+            </div>
+
+            <p class="plans-note">
+                Les boutons ouvrent la page Patreon. L'achat d'une offre
+                ne débloque pas encore automatiquement les fonctions du site :
+                la synchronisation des membres devra être mise en place
+                et testée avant toute vente.
+            </p>
+        </section>
+
         <div class="footer">
             PSEUDO.FINDER © 2026 — RESEARCH TOOLKIT
         </div>
@@ -133,9 +203,13 @@
         </div>
 
         <div id="ipPanel" class="panel hidden">
-            <p class="muted">Adresse IP publique de ta connexion actuelle</p>
+            <p class="muted">
+                Adresse IP publique de ta connexion actuelle
+            </p>
             <div id="myIP" class="big-value">Non récupérée</div>
-            <button id="ipBtn" class="primary">AFFICHER MON IP</button>
+            <button id="ipBtn" class="primary">
+                AFFICHER MON IP
+            </button>
         </div>
 
         <div id="bluetoothPanel" class="panel hidden">
