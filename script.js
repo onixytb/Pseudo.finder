@@ -51,10 +51,23 @@ const tools = {
 };
 
 let currentTool = null;
-let history = JSON.parse(localStorage.getItem("pf_history") || "[]");
+
+let history = [];
+
+try {
+    history = JSON.parse(localStorage.getItem("pf_history") || "[]");
+
+    if (!Array.isArray(history)) {
+        history = [];
+    }
+} catch {
+    history = [];
+}
 
 document.querySelectorAll("[data-page]").forEach(button => {
-    button.addEventListener("click", () => openTool(button.dataset.page));
+    button.addEventListener("click", () => {
+        openTool(button.dataset.page);
+    });
 });
 
 $("logoHome").addEventListener("click", event => {
@@ -66,17 +79,26 @@ $("back").addEventListener("click", goHome);
 
 function openTool(name) {
     const tool = tools[name];
+
     if (!tool) return;
 
     currentTool = name;
+
     home.classList.add("hidden");
     workspace.classList.remove("hidden");
 
     $("pageTitle").textContent = tool.title;
     $("pageDescription").textContent = tool.description;
 
-    ["searchForm", "domainForm", "urlForm", "ipPanel",
-     "bluetoothPanel", "historyPanel", "output"].forEach(id => {
+    [
+        "searchForm",
+        "domainForm",
+        "urlForm",
+        "ipPanel",
+        "bluetoothPanel",
+        "historyPanel",
+        "output"
+    ].forEach(id => {
         $(id).classList.add("hidden");
     });
 
@@ -99,13 +121,21 @@ function openTool(name) {
         $("query").classList.add("hidden");
     }
 
-    if (["pseudo", "general", "osint"].includes(name)) {
+    if ([
+        "pseudo",
+        "general",
+        "osint",
+        "domain",
+        "url"
+    ].includes(name)) {
         $("output").classList.remove("hidden");
         $("results").innerHTML = "";
         $("status").textContent = "";
     }
 
-    if (name === "history") displayHistory();
+    if (name === "history") {
+        displayHistory();
+    }
 }
 
 function goHome() {
@@ -123,11 +153,16 @@ function saveHistory(type, value, count) {
     });
 
     history = history.slice(0, 40);
-    localStorage.setItem("pf_history", JSON.stringify(history));
+
+    localStorage.setItem(
+        "pf_history",
+        JSON.stringify(history)
+    );
 }
 
 function displayHistory() {
     const list = $("historyList");
+
     list.innerHTML = "";
 
     if (!history.length) {
@@ -140,13 +175,18 @@ function displayHistory() {
         row.className = "history-item";
 
         const info = document.createElement("div");
+
         const name = document.createElement("strong");
         name.textContent = item.type + " : " + item.value;
 
         const date = document.createElement("small");
         date.textContent = item.date;
 
-        info.append(name, document.createElement("br"), date);
+        info.append(
+            name,
+            document.createElement("br"),
+            date
+        );
 
         const count = document.createElement("span");
         count.textContent = item.count + " résultats";
@@ -158,18 +198,24 @@ function displayHistory() {
 
 $("clearHistory").addEventListener("click", () => {
     if (!confirm("Effacer tout l'historique ?")) return;
+
     history = [];
+
     localStorage.removeItem("pf_history");
+
     displayHistory();
 });
 
 // RECHERCHES
+
 $("runSearch").addEventListener("click", runSearch);
 
 async function runSearch() {
+    if (!currentTool) return;
+
     const mode = tools[currentTool].mode;
 
-    let body = { mode };
+    const body = { mode };
 
     if (mode === "osint") {
         body.first = $("firstName").value.trim();
@@ -189,6 +235,7 @@ async function runSearch() {
     }
 
     const button = $("runSearch");
+
     button.disabled = true;
     button.textContent = "RECHERCHE EN COURS...";
 
@@ -196,26 +243,32 @@ async function runSearch() {
     $("status").textContent = "Connexion au moteur de recherche...";
 
     try {
-        const endpoint = mode === "osint" ? "/api/osint" : "/api/search";
+        const endpoint = mode === "osint"
+            ? "/api/osint"
+            : "/api/search";
 
         const response = await fetch(endpoint, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json"
+            },
             body: JSON.stringify(body)
         });
 
         const data = await response.json();
 
-        if (!response.ok) throw new Error(data.error || "Erreur.");
+        if (!response.ok) {
+            throw new Error(data.error || "Erreur de recherche.");
+        }
 
         let groups;
 
         if (mode === "osint") {
-            groups = data.groups;
+            groups = data.groups || [];
         } else {
-            groups = data.platforms.map(platform => ({
+            groups = (data.platforms || []).map(platform => ({
                 category: platform.name,
-                results: platform.results,
+                results: platform.results || [],
                 error: platform.error
             }));
         }
@@ -223,14 +276,17 @@ async function runSearch() {
         displayGroups(groups);
 
         const count = groups.reduce(
-            (sum, group) => sum + group.results.length, 0
+            (sum, group) => sum + (group.results || []).length,
+            0
         );
 
         const value = mode === "osint"
             ? body.first + " " + body.last
             : body.query;
 
-        $("status").textContent = count + " résultat(s) trouvé(s).";
+        $("status").textContent =
+            count + " résultat(s) trouvé(s).";
+
         saveHistory(currentTool, value, count);
 
     } catch (error) {
@@ -249,7 +305,9 @@ function displayGroups(groups) {
         card.className = "result-card";
 
         const heading = document.createElement("h3");
-        heading.textContent = group.category || group.name;
+
+        heading.textContent =
+            group.category || group.name || "Résultats";
 
         card.appendChild(heading);
 
@@ -259,23 +317,31 @@ function displayGroups(groups) {
             card.appendChild(error);
         }
 
-        group.results.forEach(item => {
+        (group.results || []).forEach(item => {
             const title = document.createElement("h3");
-            title.textContent = item.title;
+            title.textContent = item.title || "Résultat sans titre";
 
             const description = document.createElement("p");
             description.textContent = item.description || "";
 
-            const link = document.createElement("a");
-            link.textContent = "OUVRIR LA SOURCE ↗";
-            link.href = item.url;
-            link.target = "_blank";
-            link.rel = "noopener noreferrer";
+            card.append(title, description);
 
-            card.append(title, description, link);
+            if (item.url) {
+                const link = document.createElement("a");
+
+                link.textContent = "OUVRIR LA SOURCE ↗";
+                link.href = item.url;
+                link.target = "_blank";
+                link.rel = "noopener noreferrer";
+
+                card.appendChild(link);
+            }
         });
 
-        if (!group.results.length && !group.error) {
+        if (
+            (!group.results || !group.results.length) &&
+            !group.error
+        ) {
             const empty = document.createElement("p");
             empty.textContent = "Aucun résultat trouvé.";
             card.appendChild(empty);
@@ -286,9 +352,15 @@ function displayGroups(groups) {
 }
 
 // DOMAIN.FINDER
+
 $("domainBtn").addEventListener("click", async () => {
     const domain = $("domainInput").value.trim();
     const button = $("domainBtn");
+
+    if (!domain) {
+        $("status").textContent = "Entre un nom de domaine.";
+        return;
+    }
 
     button.disabled = true;
     $("results").innerHTML = "";
@@ -297,16 +369,27 @@ $("domainBtn").addEventListener("click", async () => {
     try {
         const response = await fetch("/api/domain", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json"
+            },
             body: JSON.stringify({ domain })
         });
 
         const data = await response.json();
-        if (!response.ok) throw new Error(data.error);
 
-        displayGroups(data.groups);
+        if (!response.ok) {
+            throw new Error(data.error || "Erreur DNS.");
+        }
+
+        displayGroups(data.groups || []);
+
         $("status").textContent = "Analyse terminée.";
-        saveHistory("DOMAIN.FINDER", domain, data.groups.length);
+
+        saveHistory(
+            "DOMAIN.FINDER",
+            data.domain || domain,
+            (data.groups || []).length
+        );
 
     } catch (error) {
         $("status").textContent = error.message;
@@ -316,28 +399,38 @@ $("domainBtn").addEventListener("click", async () => {
 });
 
 // IP.LOOKUP
+
 $("ipBtn").addEventListener("click", async () => {
     const button = $("ipBtn");
+
     button.disabled = true;
     $("myIP").textContent = "Chargement...";
 
     try {
-        const response = await fetch("https://api.ipify.org?format=json");
-        if (!response.ok) throw new Error("Service indisponible.");
+        const response = await fetch(
+            "https://api.ipify.org?format=json"
+        );
+
+        if (!response.ok) {
+            throw new Error("Service indisponible.");
+        }
 
         const data = await response.json();
+
         $("myIP").textContent = data.ip;
 
         saveHistory("IP.LOOKUP", "Mon IP publique", 1);
 
     } catch {
-        $("myIP").textContent = "Impossible de récupérer l'IP.";
+        $("myIP").textContent =
+            "Impossible de récupérer l'IP.";
     } finally {
         button.disabled = false;
     }
 });
 
 // NETWORK.FINDER
+
 $("bluetoothBtn").addEventListener("click", async () => {
     const output = $("bluetoothResult");
 
@@ -358,18 +451,25 @@ $("bluetoothBtn").addEventListener("click", async () => {
             "Appareil sélectionné : " +
             (device.name || "Nom non communiqué");
 
-        saveHistory("NETWORK.FINDER", "Appareil Bluetooth sélectionné", 1);
+        saveHistory(
+            "NETWORK.FINDER",
+            "Appareil Bluetooth sélectionné",
+            1
+        );
 
     } catch {
-        output.textContent = "Sélection annulée ou indisponible.";
+        output.textContent =
+            "Sélection annulée ou indisponible.";
     } finally {
         $("bluetoothBtn").disabled = false;
     }
 });
 
-// URL.ANALYZER : analyse locale, sans visiter le lien.
+// URL.ANALYZER
+
 $("urlBtn").addEventListener("click", () => {
     const raw = $("urlInput").value.trim();
+
     $("results").innerHTML = "";
 
     try {
@@ -386,20 +486,31 @@ $("urlBtn").addEventListener("click", () => {
             warnings.push("Le lien n'utilise pas HTTPS.");
         }
 
-        if (host.startsWith("xn--") || host.includes(".xn--")) {
-            warnings.push("Le domaine contient des caractères internationalisés.");
+        if (
+            host.startsWith("xn--") ||
+            host.includes(".xn--")
+        ) {
+            warnings.push(
+                "Le domaine contient des caractères internationalisés."
+            );
         }
 
         if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host)) {
-            warnings.push("Le lien utilise une adresse IP comme domaine.");
+            warnings.push(
+                "Le lien utilise une adresse IP comme domaine."
+            );
         }
 
         if (url.username || url.password) {
-            warnings.push("Le lien contient des identifiants intégrés.");
+            warnings.push(
+                "Le lien contient des identifiants intégrés."
+            );
         }
 
         if (host.length > 60) {
-            warnings.push("Le nom de domaine est particulièrement long.");
+            warnings.push(
+                "Le nom de domaine est particulièrement long."
+            );
         }
 
         const card = document.createElement("article");
@@ -415,15 +526,24 @@ $("urlBtn").addEventListener("click", () => {
         protocol.textContent = "Protocole : " + url.protocol;
 
         const result = document.createElement("p");
+
         result.textContent = warnings.length
             ? warnings.join(" ")
             : "Aucun indicateur simple détecté.";
 
         const note = document.createElement("p");
+
         note.textContent =
             "Cette analyse locale ne garantit pas que le site est sûr.";
 
-        card.append(heading, domain, protocol, result, note);
+        card.append(
+            heading,
+            domain,
+            protocol,
+            result,
+            note
+        );
+
         $("results").appendChild(card);
 
         $("status").textContent =
@@ -432,6 +552,7 @@ $("urlBtn").addEventListener("click", () => {
         saveHistory("URL.ANALYZER", host, warnings.length);
 
     } catch {
-        $("status").textContent = "URL invalide. Vérifie le lien.";
+        $("status").textContent =
+            "URL invalide. Vérifie le lien.";
     }
 });
