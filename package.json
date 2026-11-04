@@ -1,8 +1,8 @@
 
 {
-  "name": "pseudo-finder-v3",
-  "version": "3.0.0",
-  "description": "Recherche de pseudos publics",
+  "name": "pseudo-finder",
+  "version": "12.1.0",
+  "description": "PSEUDO.FINDER - Research toolkit",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
