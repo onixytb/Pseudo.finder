@@ -34,8 +34,15 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 12px;
     padding: 17px 0 25px;
     border-bottom: 1px solid var(--border);
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .logo {
@@ -56,6 +63,17 @@ body {
     padding: 7px 12px;
     border-radius: 8px;
     font-size: 11px;
+}
+
+.account-button {
+    background: #13251e;
+    border: 1px solid var(--green);
+    color: var(--green);
+    padding: 10px 13px;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: bold;
+    cursor: pointer;
 }
 
 .hero {
@@ -314,6 +332,87 @@ input:focus {
 
 .history-item small {
     color: var(--muted);
+}
+
+/* COMPTE */
+
+.account-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(0, 0, 0, .82);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+}
+
+.account-box {
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+    background: #111925;
+    border: 1px solid #263548;
+    border-radius: 17px;
+    padding: 28px 20px;
+}
+
+.account-close {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    border: 0;
+    background: none;
+    color: white;
+    font-size: 27px;
+    cursor: pointer;
+}
+
+.account-box h2 {
+    font-size: 25px;
+    margin: 15px 0 8px;
+}
+
+.account-description {
+    color: #8996a8;
+    font-size: 13px;
+    line-height: 1.5;
+    margin-bottom: 22px;
+}
+
+.account-message {
+    color: var(--green);
+    font-size: 12px;
+    line-height: 1.5;
+    margin: 15px 0;
+    overflow-wrap: anywhere;
+}
+
+.account-switch {
+    width: 100%;
+    margin-top: 15px;
+    border: 0;
+    background: transparent;
+    color: var(--green);
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.account-user-email {
+    color: var(--green);
+    font-size: 14px;
+    overflow-wrap: anywhere;
+    margin: 15px 0 22px;
+}
+
+@media(max-width: 420px) {
+    .topbar {
+        flex-wrap: wrap;
+    }
+
+    .header-actions {
+        flex-wrap: wrap;
+    }
 }
 
 @media(max-width: 380px) {
