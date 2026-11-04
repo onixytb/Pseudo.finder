@@ -1,541 +1,345 @@
-const crypto = require("crypto");
+require("dotenv").config();
+
 const express = require("express");
-const path = require("path");
-const dns = require("dns").promises;
+const cors = require("cors");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
+const { createClient } = require("@supabase/supabase-js");
 
 const app = express();
-
-app.use(express.json({ limit: "10kb" }));
-app.use(express.static(__dirname));
-
 const PORT = process.env.PORT || 3000;
-const API_KEY = process.env.SERPAPI_KEY;
 
-const platforms = [
-    { name: "YouTube", domain: "youtube.com" },
-    { name: "Reddit", domain: "reddit.com" },
-    { name: "X / Twitter", domain: "x.com" },
-    { name: "TikTok", domain: "tiktok.com" },
-    { name: "Instagram", domain: "instagram.com" },
-    { name: "Facebook", domain: "facebook.com" },
-    { name: "Pinterest", domain: "pinterest.com" },
-    { name: "Twitch", domain: "twitch.tv" },
-    { name: "GitHub", domain: "github.com" },
-    { name: "Steam", domain: "steamcommunity.com" },
-    { name: "Roblox", domain: "roblox.com" }
-];
+app.use(helmet({
+  contentSecurityPolicy: false
+}));
 
-app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "index.html"));
+app.use(cors());
+app.use(express.json({ limit: "1mb" }));
+
+app.use("/api", rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false
+}));
+
+const supabaseUrl = process.env.SUPABASE_URL;
+const anonKey = process.env.SUPABASE_ANON_KEY;
+const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+const supabaseAuth = supabaseUrl && anonKey
+  ? createClient(supabaseUrl, anonKey)
+  : null;
+
+const supabaseAdmin = supabaseUrl && serviceKey
+  ? createClient(supabaseUrl, serviceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
+  : null;
+
+const OWNER_CODE = process.env.OWNER_ACCESS_CODE;
+const SERPAPI_KEY = process.env.SERPAPI_KEY;
+
+app.use(express.static("public"));
+
+app.get("/api/config", (req, res) => {
+  res.json({
+    supabaseUrl: supabaseUrl || "",
+    supabaseAnonKey: anonKey || ""
+  });
 });
 
-// CONFIGURATION SUPABASE
-app.get("/api/config", (req, res) => {
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-        return res.status(500).json({
-            error: "Configuration Supabase manquante sur Render."
-        });
+async function authenticate(req, res, next) {
+  try {
+    if (!supabaseAuth) {
+      return res.status(503).json({
+        error: "Authentification indisponible."
+      });
     }
 
-    res.setHeader("Cache-Control", "no-store");
+    const header = req.headers.authorization || "";
+    const token = header.startsWith("Bearer ")
+      ? header.slice(7)
+      : "";
+
+    if (!token) {
+      return res.status(401).json({
+        error: "Connexion nécessaire."
+      });
+    }
+
+    const { data, error } = await supabaseAuth.auth.getUser(token);
+
+    if (error || !data.user) {
+      return res.status(401).json({
+        error: "Session invalide."
+      });
+    }
+
+    req.user = data.user;
+    req.token = token;
+
+    next();
+
+  } catch {
+    res.status(401).json({
+      error: "Authentification impossible."
+    });
+  }
+}
+
+async function getPlan(userId) {
+  if (!supabaseAdmin) return "free";
+
+  const { data, error } = await supabaseAdmin
+    .from("subscriptions")
+    .select("plan,status")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error || !data || data.status !== "active") {
+    return "free";
+  }
+
+  return data.plan || "free";
+}
+
+const ranks = {
+  free: 0,
+  pro: 1,
+  ultimate: 2,
+  owner: 3
+};
+
+function requirePlan(minimum) {
+  return async (req, res, next) => {
+    const plan = await getPlan(req.user.id);
+
+    if ((ranks[plan] ?? 0) < (ranks[minimum] ?? 0)) {
+      return res.status(403).json({
+        error: "Cette fonctionnalité nécessite le forfait " +
+          minimum.toUpperCase() + "."
+      });
+    }
+
+    req.plan = plan;
+    next();
+  };
+}
+
+app.get("/api/me", authenticate, async (req, res) => {
+  res.json({
+    email: req.user.email,
+    plan: await getPlan(req.user.id)
+  });
+});
+
+// Recherche web via SerpAPI
+
+async function searchWeb(query) {
+  if (!SERPAPI_KEY) {
+    throw new Error("La clé SERPAPI_KEY n'est pas configurée sur le serveur.");
+  }
+
+  const params = new URLSearchParams({
+    engine: "google",
+    q: query,
+    api_key: SERPAPI_KEY
+  });
+
+  const response = await fetch(
+    "https://serpapi.com/search.json?" + params
+  );
+
+  const data = await response.json();
+
+  if (!response.ok || data.error) {
+    throw new Error(data.error || "Recherche web indisponible.");
+  }
+
+  return (data.organic_results || []).slice(0, 10).map(item => ({
+    title: item.title || "Résultat",
+    description: item.snippet || "",
+    url: item.link || ""
+  }));
+}
+
+app.post("/api/search", authenticate, async (req, res) => {
+  try {
+    const query = String(req.body.query || "").trim();
+    const mode = String(req.body.mode || "general");
+
+    if (query.length < 2 || query.length > 100) {
+      return res.status(400).json({
+        error: "Recherche invalide."
+      });
+    }
+
+    if (!["pseudo", "general"].includes(mode)) {
+      return res.status(400).json({
+        error: "Mode de recherche invalide."
+      });
+    }
+
+    const results = await searchWeb(query);
 
     res.json({
-        supabaseUrl,
-        supabaseAnonKey
-    });
-});
-
-function normalize(value) {
-    return String(value || "")
-        .toLowerCase()
-        .replace(/^@/, "")
-        .replace(/[^a-z0-9]/g, "");
-}
-
-function isProfile(platform, url, pseudo) {
-    const parts = url.pathname.split("/").filter(Boolean);
-    const wanted = normalize(pseudo);
-
-    if (!parts.length) return false;
-
-    const first = normalize(parts[0]);
-    const second = normalize(parts[1] || "");
-
-    switch (platform) {
-        case "YouTube":
-            return (
-                parts.length === 1 && first === wanted
-            ) || (
-                parts.length === 2 &&
-                ["@", "c", "user"].some(prefix =>
-                    parts[0].toLowerCase().startsWith(prefix)
-                ) &&
-                second === wanted
-            );
-
-        case "TikTok":
-            return (
-                parts.length === 1 &&
-                parts[0].startsWith("@") &&
-                first === wanted
-            );
-
-        case "Reddit":
-            return (
-                parts.length === 2 &&
-                ["user", "u"].includes(parts[0].toLowerCase()) &&
-                second === wanted
-            );
-
-        case "Instagram":
-        case "Twitch":
-        case "GitHub":
-        case "X / Twitter":
-        case "Pinterest":
-        case "Facebook":
-            return parts.length === 1 && first === wanted;
-
-        case "Steam":
-            return (
-                parts.length === 2 &&
-                parts[0] === "id" &&
-                second === wanted
-            );
-
-        default:
-            return false;
-    }
-}
-
-async function searchGoogle(query, domain = null) {
-    if (!API_KEY) {
-        throw new Error("SERPAPI_KEY manquante sur Render.");
-    }
-
-    const q = domain
-        ? `site:${domain} ${query}`
-        : query;
-
-    const params = new URLSearchParams({
-        engine: "google",
-        q,
-        api_key: API_KEY,
-        gl: "fr",
-        hl: "fr",
-        safe: "active",
-        num: "10"
-    });
-
-    const response = await fetch(
-        "https://serpapi.com/search.json?" + params,
-        { signal: AbortSignal.timeout(25000) }
-    );
-
-    const data = await response.json();
-
-    if (!response.ok || data.error) {
-        throw new Error(data.error || "Erreur SerpApi.");
-    }
-
-    return data.organic_results || [];
-}
-
-function safeResult(item) {
-    try {
-        const url = new URL(item.link);
-
-        if (!["https:", "http:"].includes(url.protocol)) {
-            return null;
-        }
-
-        return {
-            title: String(item.title || "Page sans titre")
-                .slice(0, 250),
-
-            description: String(item.snippet || "")
-                .replace(
-                    /[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}/g,
-                    "[e-mail masqué]"
-                )
-                .replace(
-                    /(?:\+?\d[\d\s().-]{7,}\d)/g,
-                    "[numéro masqué]"
-                )
-                .slice(0, 500),
-
-            url: url.href
-        };
-    } catch {
-        return null;
-    }
-}
-
-async function searchPlatform(platform, query, mode) {
-    const raw = await searchGoogle(query, platform.domain);
-
-    const results = raw
-        .map(safeResult)
-        .filter(Boolean)
-        .filter(item => {
-            const url = new URL(item.url);
-
-            const validDomain =
-                url.hostname === platform.domain ||
-                url.hostname.endsWith("." + platform.domain);
-
-            if (!validDomain) return false;
-
-            if (mode === "pseudo") {
-                return isProfile(platform.name, url, query);
-            }
-
-            return true;
-        })
-        .map(item => ({
-            ...item,
-            possibleMatch: mode === "pseudo",
-            type: mode === "pseudo"
-                ? "Profil possible à vérifier"
-                : "Résultat public"
-        }));
-
-    return {
-        category: platform.name,
+      platforms: [{
+        name: "Résultats web",
+        category: "Sources publiques",
         results
-    };
-}
+      }]
+    });
 
-// RECHERCHE DE PSEUDO ET RECHERCHE GÉNÉRALE
-
-app.post("/api/search", async (req, res) => {
-    try {
-        const query = String(req.body.query || "").trim();
-        const mode = req.body.mode;
-
-        if (query.length < 2 || query.length > 150) {
-            return res.status(400).json({
-                error: "Recherche invalide."
-            });
-        }
-
-        if (!["pseudo", "general"].includes(mode)) {
-            return res.status(400).json({
-                error: "Mode invalide."
-            });
-        }
-
-        if (
-            mode === "pseudo" &&
-            !/^[a-zA-Z0-9_.@-]{2,50}$/.test(query)
-        ) {
-            return res.status(400).json({
-                error: "Pseudo invalide."
-            });
-        }
-
-        const tasks = mode === "general"
-            ? [
-                searchGoogle(query).then(raw => ({
-                    category: "Google",
-                    results: raw.map(safeResult).filter(Boolean)
-                })),
-                ...platforms.map(platform =>
-                    searchPlatform(platform, query, mode)
-                )
-            ]
-            : platforms.map(platform =>
-                searchPlatform(platform, query, mode)
-            );
-
-        const settled = await Promise.allSettled(tasks);
-
-        const output = settled.map((result, index) => {
-            if (result.status === "fulfilled") {
-                return {
-                    name: result.value.category,
-                    results: result.value.results,
-                    status: result.value.results.length
-                        ? "results"
-                        : "empty"
-                };
-            }
-
-            const platformIndex =
-                mode === "general" ? index - 1 : index;
-
-            return {
-                name: mode === "general" && index === 0
-                    ? "Google"
-                    : platforms[platformIndex].name,
-                results: [],
-                status: "error",
-                error: "Recherche indisponible pour cette source."
-            };
-        });
-
-        res.json({
-            query,
-            mode,
-            platforms: output
-        });
-
-    } catch (error) {
-        console.error(error);
-
-        res.status(500).json({
-            error: "Erreur serveur."
-        });
-    }
+  } catch (error) {
+    res.status(500).json({
+      error: error.message || "Recherche impossible."
+    });
+  }
 });
 
-// OSINT : SOURCES PUBLIQUES NON SENSIBLES
+// OSINT limité aux résultats publics non sensibles
 
-app.post("/api/osint", async (req, res) => {
-    try {
-        const first = String(req.body.first || "").trim();
-        const last = String(req.body.last || "").trim();
+app.post("/api/osint", authenticate, async (req, res) => {
+  try {
+    const first = String(req.body.first || "").trim();
+    const last = String(req.body.last || "").trim();
 
-        const valid = /^[\p{L}\p{M}' -]{2,70}$/u;
-
-        if (!valid.test(first) || !valid.test(last)) {
-            return res.status(400).json({
-                error: "Nom ou prénom invalide."
-            });
-        }
-
-        const fullName = `"${first} ${last}"`;
-
-        const searches = [
-            {
-                category: "Articles et actualités",
-                query: `${fullName} actualité interview`
-            },
-            {
-                category: "Informations professionnelles",
-                query: `${fullName} profession entreprise parcours`
-            },
-            {
-                category: "Organisations et sites officiels",
-                query: `${fullName} site officiel organisation`
-            },
-            {
-                category: "Profils professionnels publics",
-                query: `${fullName} profil professionnel`
-            }
-        ];
-
-        const groups = await Promise.all(
-            searches.map(async search => {
-                try {
-                    const raw = await searchGoogle(search.query);
-
-                    return {
-                        category: search.category,
-                        results: raw.map(safeResult).filter(Boolean)
-                    };
-                } catch {
-                    return {
-                        category: search.category,
-                        results: [],
-                        error: "Source indisponible."
-                    };
-                }
-            })
-        );
-
-        const seen = new Set();
-
-        for (const group of groups) {
-            group.results = group.results.filter(item => {
-                if (seen.has(item.url)) return false;
-
-                seen.add(item.url);
-                return true;
-            });
-        }
-
-        res.json({
-            groups,
-            total: groups.reduce(
-                (sum, group) => sum + group.results.length,
-                0
-            )
-        });
-
-    } catch (error) {
-        console.error(error);
-
-        res.status(500).json({
-            error: "Erreur OSINT."
-        });
+    if (
+      first.length < 2 ||
+      last.length < 2 ||
+      first.length > 50 ||
+      last.length > 50
+    ) {
+      return res.status(400).json({
+        error: "Nom ou prénom invalide."
+      });
     }
+
+    const query = `"${first}" "${last}" profil public`;
+    const results = await searchWeb(query);
+
+    res.json({
+      groups: [{
+        category: "Pages publiques",
+        results
+      }]
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      error: error.message || "Recherche OSINT impossible."
+    });
+  }
 });
 
-// DOMAIN.FINDER : DNS PUBLIC
+// Analyse DNS publique
 
-app.post("/api/domain", async (req, res) => {
-    try {
-        const domain = String(req.body.domain || "")
-            .trim()
-            .toLowerCase()
-            .replace(/^https?:\/\//, "")
-            .replace(/\/.*$/, "")
-            .replace(/\.$/, "");
+app.post("/api/domain", authenticate, async (req, res) => {
+  try {
+    const domain = String(req.body.domain || "")
+      .trim()
+      .toLowerCase();
 
-        const validDomain =
-            /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/;
-
-        if (!validDomain.test(domain)) {
-            return res.status(400).json({
-                error: "Nom de domaine invalide."
-            });
-        }
-
-        const types = ["A", "AAAA", "MX", "NS", "TXT", "CNAME"];
-
-        const groups = await Promise.all(
-            types.map(async type => {
-                try {
-                    const records = await dns.resolve(domain, type);
-
-                    return {
-                        category: "DNS " + type,
-                        results: records.map(record => ({
-                            title: typeof record === "object"
-                                ? JSON.stringify(record)
-                                : String(record),
-                            description: "Enregistrement DNS public",
-                            url: "https://www.iana.org/domains"
-                        }))
-                    };
-                } catch (error) {
-                    return {
-                        category: "DNS " + type,
-                        results: [],
-                        error:
-                            error.code === "ENODATA" ||
-                            error.code === "ENOTFOUND"
-                                ? "Aucun enregistrement disponible."
-                                : "Requête DNS indisponible."
-                    };
-                }
-            })
-        );
-
-        res.json({ domain, groups });
-
-    } catch (error) {
-        console.error(error);
-
-        res.status(500).json({
-            error: "Erreur DNS."
-        });
+    if (
+      domain.length > 253 ||
+      !/^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i.test(domain)
+    ) {
+      return res.status(400).json({
+        error: "Nom de domaine invalide."
+      });
     }
-});
-app.post("/api/owner/redeem", async (req, res) => {
-    try {
-        const code = String(req.body.code || "");
-        const expectedCode = process.env.OWNER_ACCESS_CODE;
 
-        const supabaseUrl = process.env.SUPABASE_URL;
-        const anonKey = process.env.SUPABASE_ANON_KEY;
-        const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const types = ["A", "AAAA", "MX", "NS", "TXT"];
+    const groups = [];
 
-        if (!expectedCode || !supabaseUrl || !anonKey || !serviceKey) {
-            return res.status(500).json({
-                error: "Configuration OWNER incomplète."
-            });
-        }
+    for (const type of types) {
+      const response = await fetch(
+        `https://dns.google/resolve?name=${encodeURIComponent(domain)}&type=${type}`
+      );
 
-        const authHeader = req.headers.authorization || "";
-        const token = authHeader.startsWith("Bearer ")
-            ? authHeader.slice(7)
-            : "";
+      if (!response.ok) continue;
 
-        if (!token || !code) {
-            return res.status(400).json({
-                error: "Connecte-toi et entre ton code."
-            });
-        }
+      const data = await response.json();
 
-        const received = Buffer.from(code);
-        const expected = Buffer.from(expectedCode);
-
-        const validCode =
-            received.length === expected.length &&
-            crypto.timingSafeEqual(received, expected);
-
-        if (!validCode) {
-            return res.status(403).json({
-                error: "Code propriétaire incorrect."
-            });
-        }
-
-        const userResponse = await fetch(
-            supabaseUrl + "/auth/v1/user",
-            {
-                headers: {
-                    apikey: anonKey,
-                    Authorization: "Bearer " + token
-                }
-            }
-        );
-
-        if (!userResponse.ok) {
-            return res.status(401).json({
-                error: "Session invalide. Reconnecte-toi."
-            });
-        }
-
-        const user = await userResponse.json();
-
-        const saveResponse = await fetch(
-            supabaseUrl + "/rest/v1/subscriptions?on_conflict=user_id",
-            {
-                method: "POST",
-                headers: {
-                    apikey: serviceKey,
-                    Authorization: "Bearer " + serviceKey,
-                    "Content-Type": "application/json",
-                    Prefer: "resolution=merge-duplicates,return=minimal"
-                },
-                body: JSON.stringify({
-                    user_id: user.id,
-                    plan: "owner",
-                    status: "active",
-                    provider: null,
-                    cancel_at_period_end: false
-                })
-            }
-        );
-
-        if (!saveResponse.ok) {
-            console.error(await saveResponse.text());
-
-            return res.status(500).json({
-                error: "Impossible d'activer OWNER."
-            });
-        }
-
-        return res.json({
-            success: true,
-            plan: "owner",
-            message: "Accès OWNER activé."
-        });
-
-    } catch (error) {
-        console.error("OWNER :", error);
-
-        return res.status(500).json({
-            error: "Erreur serveur."
-        });
+      groups.push({
+        category: "DNS " + type,
+        results: (data.Answer || []).map(record => ({
+          title: record.name,
+          description: record.data,
+          url: ""
+        }))
+      });
     }
+
+    res.json({ groups });
+
+  } catch {
+    res.status(500).json({
+      error: "Impossible de consulter les DNS."
+    });
+  }
 });
+
+// Code propriétaire
+
+app.post("/api/owner/redeem", authenticate, async (req, res) => {
+  try {
+    if (!OWNER_CODE || !supabaseAdmin) {
+      return res.status(503).json({
+        error: "Activation propriétaire non configurée."
+      });
+    }
+
+    const code = String(req.body.code || "");
+
+    if (code !== OWNER_CODE) {
+      return res.status(403).json({
+        error: "Code propriétaire incorrect."
+      });
+    }
+
+    const { error } = await supabaseAdmin
+      .from("subscriptions")
+      .upsert({
+        user_id: req.user.id,
+        plan: "owner",
+        status: "active",
+        provider: "owner_code",
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: "user_id"
+      });
+
+    if (error) {
+      console.error("Owner activation:", error);
+
+      return res.status(500).json({
+        error: "Impossible d'activer le forfait propriétaire. Vérifie la table subscriptions."
+      });
+    }
+
+    res.json({
+      success: true,
+      plan: "owner"
+    });
+
+  } catch {
+    res.status(500).json({
+      error: "Erreur pendant l'activation."
+    });
+  }
+});
+
+// Page d'accueil
+
+app.get("*", (req, res) => {
+  res.sendFile(require("path").join(__dirname, "public", "index.html"));
+});
+
 app.listen(PORT, () => {
-    console.log(
-        "PSEUDO.FINDER V12 actif sur le port " + PORT
-    );
+  console.log("PSEUDO.FINDER lancé sur le port " + PORT);
 });
