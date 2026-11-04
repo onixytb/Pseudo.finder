@@ -29,6 +29,25 @@ app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "index.html"));
 });
 
+// CONFIGURATION SUPABASE
+app.get("/api/config", (req, res) => {
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+        return res.status(500).json({
+            error: "Configuration Supabase manquante sur Render."
+        });
+    }
+
+    res.setHeader("Cache-Control", "no-store");
+
+    res.json({
+        supabaseUrl,
+        supabaseAnonKey
+    });
+});
+
 function normalize(value) {
     return String(value || "")
         .toLowerCase()
@@ -47,20 +66,29 @@ function isProfile(platform, url, pseudo) {
 
     switch (platform) {
         case "YouTube":
-            return parts.length === 1 && first === wanted ||
+            return (
+                parts.length === 1 && first === wanted
+            ) || (
                 parts.length === 2 &&
                 ["@", "c", "user"].some(prefix =>
                     parts[0].toLowerCase().startsWith(prefix)
-                ) && second === wanted;
+                ) &&
+                second === wanted
+            );
 
         case "TikTok":
-            return parts.length === 1 &&
-                parts[0].startsWith("@") && first === wanted;
+            return (
+                parts.length === 1 &&
+                parts[0].startsWith("@") &&
+                first === wanted
+            );
 
         case "Reddit":
-            return parts.length === 2 &&
+            return (
+                parts.length === 2 &&
                 ["user", "u"].includes(parts[0].toLowerCase()) &&
-                second === wanted;
+                second === wanted
+            );
 
         case "Instagram":
         case "Twitch":
@@ -71,8 +99,11 @@ function isProfile(platform, url, pseudo) {
             return parts.length === 1 && first === wanted;
 
         case "Steam":
-            return parts.length === 2 &&
-                parts[0] === "id" && second === wanted;
+            return (
+                parts.length === 2 &&
+                parts[0] === "id" &&
+                second === wanted
+            );
 
         default:
             return false;
@@ -84,7 +115,9 @@ async function searchGoogle(query, domain = null) {
         throw new Error("SERPAPI_KEY manquante sur Render.");
     }
 
-    const q = domain ? `site:${domain} ${query}` : query;
+    const q = domain
+        ? `site:${domain} ${query}`
+        : query;
 
     const params = new URLSearchParams({
         engine: "google",
@@ -119,11 +152,20 @@ function safeResult(item) {
         }
 
         return {
-            title: String(item.title || "Page sans titre").slice(0, 250),
+            title: String(item.title || "Page sans titre")
+                .slice(0, 250),
+
             description: String(item.snippet || "")
-                .replace(/[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}/g, "[e-mail masqué]")
-                .replace(/(?:\+?\d[\d\s().-]{7,}\d)/g, "[numéro masqué]")
+                .replace(
+                    /[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}/g,
+                    "[e-mail masqué]"
+                )
+                .replace(
+                    /(?:\+?\d[\d\s().-]{7,}\d)/g,
+                    "[numéro masqué]"
+                )
                 .slice(0, 500),
+
             url: url.href
         };
     } catch {
@@ -166,7 +208,8 @@ async function searchPlatform(platform, query, mode) {
     };
 }
 
-// RECHERCHE DE PSEUDO ET RECHERCHE GENERALE
+// RECHERCHE DE PSEUDO ET RECHERCHE GÉNÉRALE
+
 app.post("/api/search", async (req, res) => {
     try {
         const query = String(req.body.query || "").trim();
@@ -184,8 +227,10 @@ app.post("/api/search", async (req, res) => {
             });
         }
 
-        if (mode === "pseudo" &&
-            !/^[a-zA-Z0-9_.@-]{2,50}$/.test(query)) {
+        if (
+            mode === "pseudo" &&
+            !/^[a-zA-Z0-9_.@-]{2,50}$/.test(query)
+        ) {
             return res.status(400).json({
                 error: "Pseudo invalide."
             });
@@ -197,12 +242,12 @@ app.post("/api/search", async (req, res) => {
                     category: "Google",
                     results: raw.map(safeResult).filter(Boolean)
                 })),
-                ...platforms.map(p =>
-                    searchPlatform(p, query, mode)
+                ...platforms.map(platform =>
+                    searchPlatform(platform, query, mode)
                 )
             ]
-            : platforms.map(p =>
-                searchPlatform(p, query, mode)
+            : platforms.map(platform =>
+                searchPlatform(platform, query, mode)
             );
 
         const settled = await Promise.allSettled(tasks);
@@ -212,17 +257,22 @@ app.post("/api/search", async (req, res) => {
                 return {
                     name: result.value.category,
                     results: result.value.results,
-                    status: result.value.results.length ? "results" : "empty"
+                    status: result.value.results.length
+                        ? "results"
+                        : "empty"
                 };
             }
+
+            const platformIndex =
+                mode === "general" ? index - 1 : index;
 
             return {
                 name: mode === "general" && index === 0
                     ? "Google"
-                    : platforms[mode === "general" ? index - 1 : index].name,
+                    : platforms[platformIndex].name,
                 results: [],
                 status: "error",
-                error: result.reason.message
+                error: "Recherche indisponible pour cette source."
             };
         });
 
@@ -234,13 +284,15 @@ app.post("/api/search", async (req, res) => {
 
     } catch (error) {
         console.error(error);
+
         res.status(500).json({
             error: "Erreur serveur."
         });
     }
 });
 
-// OSINT : SOURCES PUBLIQUES
+// OSINT : SOURCES PUBLIQUES NON SENSIBLES
+
 app.post("/api/osint", async (req, res) => {
     try {
         const first = String(req.body.first || "").trim();
@@ -284,7 +336,7 @@ app.post("/api/osint", async (req, res) => {
                         category: search.category,
                         results: raw.map(safeResult).filter(Boolean)
                     };
-                } catch (error) {
+                } catch {
                     return {
                         category: search.category,
                         results: [],
@@ -299,6 +351,7 @@ app.post("/api/osint", async (req, res) => {
         for (const group of groups) {
             group.results = group.results.filter(item => {
                 if (seen.has(item.url)) return false;
+
                 seen.add(item.url);
                 return true;
             });
@@ -307,12 +360,14 @@ app.post("/api/osint", async (req, res) => {
         res.json({
             groups,
             total: groups.reduce(
-                (sum, group) => sum + group.results.length, 0
+                (sum, group) => sum + group.results.length,
+                0
             )
         });
 
     } catch (error) {
         console.error(error);
+
         res.status(500).json({
             error: "Erreur OSINT."
         });
@@ -320,6 +375,7 @@ app.post("/api/osint", async (req, res) => {
 });
 
 // DOMAIN.FINDER : DNS PUBLIC
+
 app.post("/api/domain", async (req, res) => {
     try {
         const domain = String(req.body.domain || "")
@@ -359,10 +415,11 @@ app.post("/api/domain", async (req, res) => {
                     return {
                         category: "DNS " + type,
                         results: [],
-                        error: error.code === "ENODATA" ||
+                        error:
+                            error.code === "ENODATA" ||
                             error.code === "ENOTFOUND"
-                            ? "Aucun enregistrement disponible."
-                            : "Requête DNS indisponible."
+                                ? "Aucun enregistrement disponible."
+                                : "Requête DNS indisponible."
                     };
                 }
             })
@@ -372,30 +429,15 @@ app.post("/api/domain", async (req, res) => {
 
     } catch (error) {
         console.error(error);
+
         res.status(500).json({
             error: "Erreur DNS."
         });
     }
 });
 
-// CONFIGURATION PUBLIQUE SUPABASE
-app.get("/api/config", (req, res) => {
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-        return res.status(500).json({
-            error: "Configuration Supabase manquante sur Render."
-        });
-    }
-
-    res.setHeader("Cache-Control", "no-store");
-    res.json({
-        supabaseUrl,
-        supabaseAnonKey
-    });
-});
-
 app.listen(PORT, () => {
-    console.log("PSEUDO.FINDER V12 actif sur le port " + PORT);
+    console.log(
+        "PSEUDO.FINDER V12 actif sur le port " + PORT
+    );
 });
