@@ -1,4 +1,4 @@
-
+const crypto = require("crypto");
 const express = require("express");
 const path = require("path");
 const dns = require("dns").promises;
@@ -435,7 +435,105 @@ app.post("/api/domain", async (req, res) => {
         });
     }
 });
+app.post("/api/owner/redeem", async (req, res) => {
+    try {
+        const code = String(req.body.code || "");
+        const expectedCode = process.env.OWNER_ACCESS_CODE;
 
+        const supabaseUrl = process.env.SUPABASE_URL;
+        const anonKey = process.env.SUPABASE_ANON_KEY;
+        const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+        if (!expectedCode || !supabaseUrl || !anonKey || !serviceKey) {
+            return res.status(500).json({
+                error: "Configuration OWNER incomplète."
+            });
+        }
+
+        const authHeader = req.headers.authorization || "";
+        const token = authHeader.startsWith("Bearer ")
+            ? authHeader.slice(7)
+            : "";
+
+        if (!token || !code) {
+            return res.status(400).json({
+                error: "Connecte-toi et entre ton code."
+            });
+        }
+
+        const received = Buffer.from(code);
+        const expected = Buffer.from(expectedCode);
+
+        const validCode =
+            received.length === expected.length &&
+            crypto.timingSafeEqual(received, expected);
+
+        if (!validCode) {
+            return res.status(403).json({
+                error: "Code propriétaire incorrect."
+            });
+        }
+
+        const userResponse = await fetch(
+            supabaseUrl + "/auth/v1/user",
+            {
+                headers: {
+                    apikey: anonKey,
+                    Authorization: "Bearer " + token
+                }
+            }
+        );
+
+        if (!userResponse.ok) {
+            return res.status(401).json({
+                error: "Session invalide. Reconnecte-toi."
+            });
+        }
+
+        const user = await userResponse.json();
+
+        const saveResponse = await fetch(
+            supabaseUrl + "/rest/v1/subscriptions?on_conflict=user_id",
+            {
+                method: "POST",
+                headers: {
+                    apikey: serviceKey,
+                    Authorization: "Bearer " + serviceKey,
+                    "Content-Type": "application/json",
+                    Prefer: "resolution=merge-duplicates,return=minimal"
+                },
+                body: JSON.stringify({
+                    user_id: user.id,
+                    plan: "owner",
+                    status: "active",
+                    provider: null,
+                    cancel_at_period_end: false
+                })
+            }
+        );
+
+        if (!saveResponse.ok) {
+            console.error(await saveResponse.text());
+
+            return res.status(500).json({
+                error: "Impossible d'activer OWNER."
+            });
+        }
+
+        return res.json({
+            success: true,
+            plan: "owner",
+            message: "Accès OWNER activé."
+        });
+
+    } catch (error) {
+        console.error("OWNER :", error);
+
+        return res.status(500).json({
+            error: "Erreur serveur."
+        });
+    }
+});
 app.listen(PORT, () => {
     console.log(
         "PSEUDO.FINDER V12 actif sur le port " + PORT
