@@ -378,6 +378,24 @@ app.post("/api/domain", async (req, res) => {
     }
 });
 
+// CONFIGURATION PUBLIQUE SUPABASE
+app.get("/api/config", (req, res) => {
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+        return res.status(500).json({
+            error: "Configuration Supabase manquante sur Render."
+        });
+    }
+
+    res.setHeader("Cache-Control", "no-store");
+    res.json({
+        supabaseUrl,
+        supabaseAnonKey
+    });
+});
+
 app.listen(PORT, () => {
     console.log("PSEUDO.FINDER V12 actif sur le port " + PORT);
 });
