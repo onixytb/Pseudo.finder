@@ -271,3 +271,60 @@ accountLogout.addEventListener("click", async () => {
 });
 
 initializeAccount();
+const ownerCodeButton = document.getElementById("ownerCodeButton");
+
+ownerCodeButton.addEventListener("click", async () => {
+    const code = document.getElementById("ownerCodeInput").value.trim();
+    const message = document.getElementById("ownerCodeMessage");
+
+    if (!supabaseClient || !currentUser) {
+        message.textContent = "Connecte-toi à ton compte avant.";
+        return;
+    }
+
+    if (!code) {
+        message.textContent = "Entre ton code.";
+        return;
+    }
+
+    ownerCodeButton.disabled = true;
+    ownerCodeButton.textContent = "VÉRIFICATION...";
+
+    try {
+        const { data, error } =
+            await supabaseClient.auth.getSession();
+
+        if (error) throw error;
+
+        if (!data.session) {
+            throw new Error("Session expirée. Reconnecte-toi.");
+        }
+
+        const response = await fetch("/api/owner/redeem", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: "Bearer " + data.session.access_token
+            },
+            body: JSON.stringify({ code })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.error || "Code invalide.");
+        }
+
+        message.textContent = "OWNER activé avec succès !";
+        message.style.color = "#35e69a";
+
+        document.getElementById("ownerCodeInput").value = "";
+
+    } catch (error) {
+        message.textContent = error.message;
+        message.style.color = "#ff7777";
+    } finally {
+        ownerCodeButton.disabled = false;
+        ownerCodeButton.textContent = "ENVOYER";
+    }
+});
