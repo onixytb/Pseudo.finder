@@ -1,316 +1,251 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#080b11">
-    <title>PSEUDO.FINDER V12</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080b11">
+  <title>PSEUDO.FINDER V13</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
-
 <div class="app">
-    <header class="topbar">
-        <a class="logo" href="#" id="logoHome">
-            PSEUDO<span>.FINDER</span>
-        </a>
+  <header class="topbar">
+    <a class="logo" href="#" id="logoHome">PSEUDO<span>.FINDER</span></a>
+    <div class="header-actions">
+      <span class="version">V13.0</span>
+      <a class="plans-shortcut" href="#plans">OFFRES</a>
+      <button id="accountButton" class="account-button">MON COMPTE</button>
+    </div>
+  </header>
 
-        <div class="header-actions">
-            <div class="version">V12.0</div>
-            <a class="plans-shortcut" href="#plans">ABONNEMENTS</a>
-            <button id="accountButton" class="account-button">
-                MON COMPTE
-            </button>
-        </div>
-    </header>
-
-    <section id="home">
-        <div class="hero">
-            <div class="online"><span></span> SYSTEM ONLINE</div>
-            <h1>RESEARCH<br><span>EVERYTHING.</span></h1>
-            <p>Ta plateforme de recherche numérique.</p>
-        </div>
-
-        <div class="section-title">RESEARCH TOOLS</div>
-
-        <div class="tool-grid">
-            <button class="tool" data-page="pseudo">
-                <span class="tool-icon">⌕</span>
-                <strong>PSEUDO.FINDER</strong>
-                <small>Recherche de profils</small>
-                <b>↗</b>
-            </button>
-
-            <button class="tool" data-page="general">
-                <span class="tool-icon">◎</span>
-                <strong>GENERAL SEARCH</strong>
-                <small>Recherche multi-sites</small>
-                <b>↗</b>
-            </button>
-
-            <button class="tool" data-page="osint">
-                <span class="tool-icon">⌘</span>
-                <strong>OSINT.FINDER</strong>
-                <small>Sources publiques</small>
-                <b>↗</b>
-            </button>
-
-            <button class="tool" data-page="network">
-                <span class="tool-icon">⌁</span>
-                <strong>NETWORK.FINDER</strong>
-                <small>Informations réseau</small>
-                <b>↗</b>
-            </button>
-
-            <button class="tool" data-page="domain">
-                <span class="tool-icon">🌐</span>
-                <strong>DOMAIN.FINDER</strong>
-                <small>Analyse DNS</small>
-                <b>↗</b>
-            </button>
-
-            <button class="tool" data-page="ip">
-                <span class="tool-icon">⌗</span>
-                <strong>IP.LOOKUP</strong>
-                <small>Informations sur ton IP</small>
-                <b>↗</b>
-            </button>
-
-            <button class="tool" data-page="url">
-                <span class="tool-icon">↗</span>
-                <strong>URL.ANALYZER</strong>
-                <small>Analyse de liens</small>
-                <b>↗</b>
-            </button>
-
-            <button class="tool" data-page="history">
-                <span class="tool-icon">◷</span>
-                <strong>HISTORY</strong>
-                <small>Historique des recherches</small>
-                <b>↗</b>
-            </button>
-        </div>
-
-        <section id="plans" class="plans-section">
-            <div class="plans-heading">
-                <div class="online"><span></span> MEMBERSHIP</div>
-                <h2>CHOISIS TON <span>ACCÈS.</span></h2>
-                <p>Les offres PSEUDO.FINDER.</p>
-            </div>
-
-            <div class="plans-grid">
-                <article class="plan-card">
-                    <div class="plan-name">FREE</div>
-                    <div class="plan-price">0 € <small>/ mois</small></div>
-                    <p class="plan-description">
-                        Pour découvrir les outils essentiels.
-                    </p>
-                    <ul>
-                        <li>Accès aux fonctions gratuites</li>
-                        <li>Recherche de base</li>
-                    </ul>
-                    <a class="plan-button plan-free" href="#home">
-                        OFFRE GRATUITE
-                    </a>
-                </article>
-
-                <article class="plan-card plan-featured">
-                    <div class="plan-tag">RECOMMANDÉ</div>
-                    <div class="plan-name">PRO</div>
-                    <div class="plan-price">2 € <small>/ mois</small></div>
-                    <p class="plan-description">
-                        Pour une utilisation régulière.
-                    </p>
-                    <ul>
-                        <li>Historique illimité</li>
-                        <li>Recherches étendues</li>
-                        <li>Export PDF</li>
-                    </ul>
-                    <a class="plan-button"
-                       href="https://www.patreon.com/checkout/Pseudofinder?rid=29986347&is_free_trial=true"
-                       target="_blank" rel="noopener noreferrer">
-                        S'ABONNER À PRO ↗
-                    </a>
-                </article>
-
-                <article class="plan-card">
-                    <div class="plan-name">ULTIMATE</div>
-                    <div class="plan-price">5 € <small>/ mois</small></div>
-                    <p class="plan-description">
-                        L'offre la plus complète.
-                    </p>
-                    <ul>
-                        <li>Tous les avantages PRO</li>
-                        <li>Outils avancés</li>
-                        <li>Historique avec filtres</li>
-                    </ul>
-                    <a class="plan-button"
-                       href="https://www.patreon.com/checkout/Pseudofinder?rid=29986362"
-                       target="_blank" rel="noopener noreferrer">
-                        S'ABONNER À ULTIMATE ↗
-                    </a>
-                </article>
-            </div>
-
-            <p class="plans-note">
-                Les abonnements Patreon et les accès du site ne sont pas
-                encore synchronisés automatiquement.
-            </p>
-
-            <div class="owner-access">
-                <div class="online"><span></span> PRIVATE ACCESS</div>
-                <h3>PLAN PROPRIÉTAIRE</h3>
-                <p>
-                    Entre ton code pour activer gratuitement l'accès OWNER.
-                </p>
-
-                <div class="owner-form">
-                    <input
-                        id="ownerCodeInput"
-                        type="password"
-                        placeholder="Code propriétaire"
-                        maxlength="30"
-                    >
-                    <button id="ownerCodeButton" type="button">
-                        ENVOYER
-                    </button>
-                </div>
-
-                <p id="ownerCodeMessage" class="owner-message"></p>
-            </div>
-        </section>
-
-        <div class="footer">
-            PSEUDO.FINDER © 2026 — RESEARCH TOOLKIT
-        </div>
+  <main id="home">
+    <section class="hero">
+      <div class="online"><span></span> SYSTEM ONLINE</div>
+      <h1>RESEARCH<br><span>EVERYTHING.</span></h1>
+      <p>Une boîte à outils pour explorer les informations accessibles publiquement.</p>
+      <div class="hero-stats">
+        <div><strong id="homePlan">FREE</strong><small>TON FORFAIT</small></div>
+        <div><strong id="homeSearchCount">0</strong><small>RECHERCHES LOCALES</small></div>
+        <div><strong id="homeFavorites">0</strong><small>FAVORIS</small></div>
+      </div>
     </section>
 
-    <section id="workspace" class="hidden">
-        <button class="back" id="back">← ACCUEIL</button>
+    <div class="section-heading">
+      <div><span class="eyebrow">TOOLKIT</span><h2>OUTILS DE RECHERCHE</h2></div>
+      <span class="section-hint">Choisis un outil</span>
+    </div>
+    <div class="tool-grid" id="toolGrid"></div>
 
-        <div class="page-heading">
-            <div class="online"><span></span> TOOL ACTIVE</div>
-            <h2 id="pageTitle"></h2>
-            <p id="pageDescription"></p>
-        </div>
-
-        <div id="searchForm" class="panel hidden">
-            <input id="query" placeholder="Ta recherche..." maxlength="150">
-
-            <div id="nameFields" class="hidden">
-                <input id="firstName" placeholder="Prénom" maxlength="70">
-                <input id="lastName" placeholder="Nom" maxlength="70">
-            </div>
-
-            <button id="runSearch" class="primary">
-                LANCER LA RECHERCHE ↗
-            </button>
-        </div>
-
-        <div id="domainForm" class="panel hidden">
-            <input id="domainInput" placeholder="exemple.com" maxlength="253">
-            <button id="domainBtn" class="primary">
-                ANALYSER LE DOMAINE ↗
-            </button>
-        </div>
-
-        <div id="urlForm" class="panel hidden">
-            <input id="urlInput" placeholder="https://exemple.com" maxlength="2000">
-            <button id="urlBtn" class="primary">
-                ANALYSER LE LIEN ↗
-            </button>
-        </div>
-
-        <div id="ipPanel" class="panel hidden">
-            <p class="muted">
-                Adresse IP publique de ta connexion actuelle
-            </p>
-            <div id="myIP" class="big-value">Non récupérée</div>
-            <button id="ipBtn" class="primary">
-                AFFICHER MON IP
-            </button>
-        </div>
-
-        <div id="bluetoothPanel" class="panel hidden">
-            <h3>BLUETOOTH</h3>
-            <p class="muted">
-                Choisis un appareil Bluetooth compatible à proximité.
-            </p>
-            <button id="bluetoothBtn" class="primary">
-                RECHERCHER UN APPAREIL
-            </button>
-            <div id="bluetoothResult" class="result-message"></div>
-        </div>
-
-        <div id="output" class="hidden">
-            <p id="status" class="status"></p>
-            <div id="results"></div>
-        </div>
-
-        <div id="historyPanel" class="hidden">
-            <button id="clearHistory" class="secondary">
-                EFFACER L'HISTORIQUE
-            </button>
-            <div id="historyList"></div>
-        </div>
+    <section class="dashboard panel">
+      <div class="section-heading compact">
+        <div><span class="eyebrow">OVERVIEW</span><h2>TABLEAU DE BORD</h2></div>
+        <button class="text-button" data-open="history">Voir l'historique ↗</button>
+      </div>
+      <div class="dashboard-grid">
+        <div class="metric"><span>Recherches</span><strong id="dashSearches">0</strong></div>
+        <div class="metric"><span>Favoris</span><strong id="dashFavorites">0</strong></div>
+        <div class="metric"><span>Dernière activité</span><strong id="dashLast">—</strong></div>
+      </div>
+      <div class="dashboard-bottom">
+        <div><strong>Ton accès</strong><p id="dashPlanText">Forfait gratuit</p></div>
+        <a href="#plans" class="outline-button">GÉRER MON ACCÈS</a>
+      </div>
     </section>
+
+    <section id="plans" class="plans-section">
+      <div class="section-heading">
+        <div><span class="eyebrow">MEMBERSHIP</span><h2>CHOISIS TON ACCÈS.</h2></div>
+      </div>
+
+      <div class="plans-grid">
+        <article class="plan-card">
+          <div class="plan-name">FREE</div>
+          <div class="plan-price">0 € <small>/ mois</small></div>
+          <p>Pour découvrir les outils essentiels.</p>
+          <ul>
+            <li>Recherche de pseudo (sources limitées)</li>
+            <li>Recherche générale de base</li>
+            <li>OSINT sur sources publiques</li>
+            <li>IP, URL et DNS de base</li>
+            <li>Historique limité à 20 entrées</li>
+          </ul>
+          <span class="plan-current" id="freeCurrent">FORFAIT GRATUIT</span>
+        </article>
+
+        <article class="plan-card featured">
+          <div class="plan-tag">RECOMMANDÉ</div>
+          <div class="plan-name">PRO</div>
+          <div class="plan-price">2 € <small>/ mois</small></div>
+          <p>Pour une utilisation régulière.</p>
+          <ul>
+            <li>Tout FREE</li>
+            <li>Historique illimité</li>
+            <li>Favoris et export PDF</li>
+            <li>Recherches étendues</li>
+            <li>Filtres et SITE.CHECK</li>
+            <li>DNS avancé</li>
+          </ul>
+          <a class="plan-button" href="https://www.patreon.com/checkout/Pseudofinder?rid=29986347&is_free_trial=true" target="_blank" rel="noopener">S'ABONNER À PRO ↗</a>
+        </article>
+
+        <article class="plan-card">
+          <div class="plan-name">ULTIMATE</div>
+          <div class="plan-price">5 € <small>/ mois</small></div>
+          <p>L'offre la plus complète.</p>
+          <ul>
+            <li>Tout PRO</li>
+            <li>DIGITAL.FOOTPRINT</li>
+            <li>USERNAME.HISTORY</li>
+            <li>QR.GENERATOR et IMAGE.METADATA</li>
+            <li>SECURITY.CHECK</li>
+            <li>Statistiques et outils avancés</li>
+          </ul>
+          <a class="plan-button" href="https://www.patreon.com/checkout/Pseudofinder?rid=29986362" target="_blank" rel="noopener">S'ABONNER À ULTIMATE ↗</a>
+        </article>
+      </div>
+
+      <p class="plans-note">
+        Les paiements Patreon ne sont pas encore synchronisés automatiquement
+        avec les comptes du site.
+      </p>
+
+      <div class="owner-access">
+        <div class="online"><span></span> PRIVATE ACCESS</div>
+        <h3>PLAN PROPRIÉTAIRE</h3>
+        <p>Connecte-toi puis entre le code propriétaire pour activer l'accès complet.</p>
+        <div class="owner-form">
+          <input id="ownerCodeInput" type="password" placeholder="Code propriétaire" maxlength="30">
+          <button id="ownerCodeButton" type="button">ENVOYER</button>
+        </div>
+        <p id="ownerCodeMessage" class="owner-message" aria-live="polite"></p>
+      </div>
+    </section>
+
+    <footer>PSEUDO.FINDER © 2026 — RESEARCH TOOLKIT</footer>
+  </main>
+
+  <main id="workspace" class="hidden">
+    <button class="back" id="back">← ACCUEIL</button>
+
+    <section class="page-heading">
+      <div class="online"><span></span> TOOL ACTIVE</div>
+      <h2 id="pageTitle"></h2>
+      <p id="pageDescription"></p>
+      <span id="toolAccess" class="access-pill"></span>
+    </section>
+
+    <section id="searchForm" class="panel hidden">
+      <label id="queryLabel" for="query">Recherche</label>
+      <input id="query" placeholder="Entre un pseudo..." maxlength="150">
+
+      <div id="nameFields" class="hidden">
+        <label for="firstName">Prénom</label>
+        <input id="firstName" maxlength="70">
+        <label for="lastName">Nom</label>
+        <input id="lastName" maxlength="70">
+      </div>
+
+      <button id="runSearch" class="primary">LANCER LA RECHERCHE ↗</button>
+      <p class="small-note">Les résultats renvoient vers des pages publiques. Vérifie toujours les correspondances.</p>
+    </section>
+
+    <section id="domainForm" class="panel hidden">
+      <label for="domainInput">Nom de domaine</label>
+      <input id="domainInput" placeholder="exemple.com" maxlength="253">
+      <button id="domainBtn" class="primary">ANALYSER LE DOMAINE ↗</button>
+    </section>
+
+    <section id="urlForm" class="panel hidden">
+      <label for="urlInput">URL à examiner</label>
+      <input id="urlInput" placeholder="https://exemple.com" maxlength="2000">
+      <button id="urlBtn" class="primary">ANALYSER LE LIEN ↗</button>
+    </section>
+
+    <section id="ipPanel" class="panel hidden">
+      <p class="muted">Adresse IP publique visible pour ta connexion actuelle.</p>
+      <div id="myIP" class="big-value">Non récupérée</div>
+      <button id="ipBtn" class="primary">AFFICHER MON IP</button>
+      <p class="small-note">Cela affiche ton IP publique ; cela ne la modifie pas.</p>
+    </section>
+
+    <section id="bluetoothPanel" class="panel hidden">
+      <h3>NETWORK.FINDER</h3>
+      <p class="muted">Sélectionne un appareil Bluetooth compatible. Le navigateur demandera ton autorisation.</p>
+      <button id="bluetoothBtn" class="primary">CHOISIR UN APPAREIL BLUETOOTH</button>
+      <div id="bluetoothResult" class="result-message"></div>
+    </section>
+
+    <section id="qrPanel" class="panel hidden">
+      <label for="qrText">Texte ou URL à encoder</label>
+      <input id="qrText" maxlength="1000" placeholder="https://...">
+      <button id="qrBtn" class="primary">GÉNÉRER LE QR CODE</button>
+      <div id="qrOutput" class="qr-output"></div>
+    </section>
+
+    <section id="imagePanel" class="panel hidden">
+      <label for="imageFile">Choisir une image depuis ton appareil</label>
+      <input id="imageFile" type="file" accept="image/*">
+      <div id="imageMetadata" class="metadata"></div>
+      <p class="small-note">L'image est analysée localement dans ton navigateur et n'est pas envoyée au serveur.</p>
+    </section>
+
+    <section id="favoritesPanel" class="panel hidden">
+      <div class="section-heading compact">
+        <h2>MES FAVORIS</h2>
+        <button id="clearFavorites" class="text-button">Tout effacer</button>
+      </div>
+      <div id="favoritesList"></div>
+    </section>
+
+    <section id="historyPanel" class="panel hidden">
+      <div class="section-heading compact">
+        <h2>HISTORIQUE</h2>
+        <button id="clearHistory" class="text-button">Effacer</button>
+      </div>
+      <div id="historyList"></div>
+    </section>
+
+    <section id="output" class="hidden">
+      <div class="results-toolbar">
+        <p id="status" class="status" aria-live="polite"></p>
+        <div class="filter-row">
+          <input id="resultFilter" placeholder="Filtrer les résultats..." maxlength="80">
+          <button id="exportPdf" class="outline-button">EXPORT PDF</button>
+        </div>
+      </div>
+      <div id="results"></div>
+    </section>
+  </main>
 </div>
 
 <div id="accountModal" class="account-modal hidden">
-    <div class="account-box">
-        <button id="closeAccount" class="account-close">×</button>
+  <div class="account-box">
+    <button id="closeAccount" class="account-close">×</button>
+    <div class="online"><span></span> ESPACE MEMBRE</div>
+    <h2 id="accountTitle">CONNEXION</h2>
+    <p class="account-description">Connecte-toi pour enregistrer ton accès et tes préférences.</p>
 
-        <div class="online"><span></span> ESPACE MEMBRE</div>
-
-        <h2 id="accountTitle">CONNEXION</h2>
-
-        <p class="account-description">
-            Connecte-toi à ton compte PSEUDO.FINDER.
-        </p>
-
-        <div id="accountForm">
-            <input
-                id="accountEmail"
-                type="email"
-                placeholder="Adresse e-mail"
-                autocomplete="email"
-                maxlength="254"
-            >
-
-            <input
-                id="accountPassword"
-                type="password"
-                placeholder="Mot de passe (8 caractères minimum)"
-                autocomplete="current-password"
-                minlength="8"
-                maxlength="128"
-            >
-
-            <button id="accountSubmit" class="primary">
-                SE CONNECTER
-            </button>
-        </div>
-
-        <p id="accountMessage" class="account-message"></p>
-
-        <button id="accountSwitch" class="account-switch">
-            Pas encore de compte ? Créer un compte
-        </button>
-
-        <div id="accountConnected" class="hidden">
-            <p class="muted">Connecté avec :</p>
-            <p id="accountUserEmail" class="account-user-email"></p>
-
-            <button id="accountLogout" class="primary">
-                SE DÉCONNECTER
-            </button>
-        </div>
+    <div id="accountForm">
+      <input id="accountEmail" type="email" placeholder="Adresse e-mail" autocomplete="email" maxlength="254">
+      <input id="accountPassword" type="password" placeholder="Mot de passe (8 caractères minimum)" autocomplete="current-password" minlength="8" maxlength="128">
+      <button id="accountSubmit" class="primary">SE CONNECTER</button>
     </div>
+
+    <p id="accountMessage" class="account-message" aria-live="polite"></p>
+    <button id="accountSwitch" class="account-switch">Pas encore de compte ? Créer un compte</button>
+
+    <div id="accountConnected" class="hidden">
+      <p class="muted">Connecté avec :</p>
+      <p id="accountUserEmail" class="account-user-email"></p>
+      <button id="accountLogout" class="primary">SE DÉCONNECTER</button>
+    </div>
+  </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="script.js"></script>
 <script src="auth.js"></script>
-
 </body>
 </html>
