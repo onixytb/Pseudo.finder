@@ -1,330 +1,296 @@
-
-const accountButton = document.getElementById("accountButton");
-const accountModal = document.getElementById("accountModal");
-const closeAccount = document.getElementById("closeAccount");
-
-const accountTitle = document.getElementById("accountTitle");
-const accountEmail = document.getElementById("accountEmail");
-const accountPassword = document.getElementById("accountPassword");
-const accountSubmit = document.getElementById("accountSubmit");
-const accountSwitch = document.getElementById("accountSwitch");
-const accountMessage = document.getElementById("accountMessage");
-
-const accountForm = document.getElementById("accountForm");
-const accountConnected = document.getElementById("accountConnected");
-const accountUserEmail = document.getElementById("accountUserEmail");
-const accountLogout = document.getElementById("accountLogout");
-
 let supabaseClient = null;
-let signupMode = false;
-let currentUser = null;
+let authMode = "login";
 
-function showAccountMessage(message, error = false) {
-    accountMessage.textContent = message;
-    accountMessage.style.color = error
-        ? "#ff7777"
-        : "#35e69a";
-}
+window.currentPlan = "free";
 
-function updateFormMode() {
-    accountTitle.textContent = signupMode
-        ? "INSCRIPTION"
-        : "CONNEXION";
+async function initAuth() {
+  try {
+    const response = await fetch("/api/config");
+    const config = await response.json();
 
-    accountSubmit.textContent = signupMode
-        ? "CRÉER MON COMPTE"
-        : "SE CONNECTER";
+    if (!response.ok || !config.supabaseUrl || !config.supabaseAnonKey) {
+      throw new Error("Configuration Supabase indisponible.");
+    }
 
-    accountPassword.autocomplete = signupMode
-        ? "new-password"
-        : "current-password";
+    supabaseClient = window.supabase.createClient(
+      config.supabaseUrl,
+      config.supabaseAnonKey
+    );
 
-    accountSwitch.textContent = signupMode
-        ? "Déjà un compte ? Se connecter"
-        : "Pas encore de compte ? Créer un compte";
-}
+    const { data } = await supabaseClient.auth.getSession();
 
-function updateAccountUI(user) {
-    currentUser = user || null;
-
-    if (currentUser) {
-        accountForm.classList.add("hidden");
-        accountSwitch.classList.add("hidden");
-        accountConnected.classList.remove("hidden");
-
-        accountTitle.textContent = "MON COMPTE";
-        accountUserEmail.textContent =
-            currentUser.email || "Compte connecté";
-
-        accountButton.textContent = "MON COMPTE";
-
-        showAccountMessage("Tu es connecté.");
+    if (data.session) {
+      await loadAccount(data.session);
     } else {
-        accountForm.classList.remove("hidden");
-        accountSwitch.classList.remove("hidden");
-        accountConnected.classList.add("hidden");
-
-        accountButton.textContent = "MON COMPTE";
-
-        accountPassword.value = "";
-
-        updateFormMode();
+      updateAccountButton(false);
     }
+
+    supabaseClient.auth.onAuthStateChange(async (event, session) => {
+      if (session) {
+        await loadAccount(session);
+      } else {
+        window.currentPlan = "free";
+        updateAccountButton(false);
+
+        if (window.renderPlan) {
+          window.renderPlan();
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error("Auth:", error);
+    updateAccountButton(false);
+  }
 }
 
-async function initializeAccount() {
-    try {
-        if (!window.supabase) {
-            throw new Error(
-                "Le service Supabase n'a pas pu être chargé."
-            );
-        }
+window.getAccessToken = async function () {
+  if (!supabaseClient) return null;
 
-        const response = await fetch("/api/config", {
-            cache: "no-store"
-        });
+  const { data } = await supabaseClient.auth.getSession();
 
-        const config = await response.json();
+  return data.session?.access_token || null;
+};
 
-        if (!response.ok) {
-            throw new Error(
-                config.error || "Configuration indisponible."
-            );
-        }
+async function loadAccount(session) {
+  try {
+    const response = await fetch("/api/me", {
+      headers: {
+        Authorization: "Bearer " + session.access_token
+      }
+    });
 
-        if (
-            !config.supabaseUrl ||
-            !config.supabaseAnonKey
-        ) {
-            throw new Error(
-                "Configuration Supabase incomplète."
-            );
-        }
+    const data = await response.json();
 
-        supabaseClient = window.supabase.createClient(
-            config.supabaseUrl,
-            config.supabaseAnonKey,
-            {
-                auth: {
-                    persistSession: true,
-                    autoRefreshToken: true,
-                    detectSessionInUrl: true
-                }
-            }
-        );
-
-        const { data, error } =
-            await supabaseClient.auth.getSession();
-
-        if (error) throw error;
-
-        updateAccountUI(data.session?.user || null);
-
-        supabaseClient.auth.onAuthStateChange(
-            (_event, session) => {
-                updateAccountUI(session?.user || null);
-            }
-        );
-
-    } catch (error) {
-        console.error("Supabase :", error);
-
-        showAccountMessage(
-            error.message || "Impossible de contacter Supabase.",
-            true
-        );
+    if (!response.ok) {
+      throw new Error(data.error || "Impossible de charger le compte.");
     }
+
+    window.currentPlan = data.plan || "free";
+
+    updateAccountButton(true, session.user.email);
+
+    if (window.renderPlan) {
+      window.renderPlan();
+    }
+
+  } catch (error) {
+    console.error(error);
+    window.currentPlan = "free";
+
+    if (window.renderPlan) {
+      window.renderPlan();
+    }
+  }
 }
 
-accountButton.addEventListener("click", () => {
-    accountModal.classList.remove("hidden");
+function updateAccountButton(loggedIn, email = "") {
+  const button = document.getElementById("accountButton");
 
-    if (currentUser) {
-        updateAccountUI(currentUser);
+  if (!button) return;
+
+  button.textContent = loggedIn ? "MON COMPTE" : "CONNEXION";
+  button.title = email;
+}
+
+function openAccount() {
+  document.getElementById("accountModal").classList.remove("hidden");
+
+  document.getElementById("accountMessage").textContent = "";
+  document.getElementById("accountForm").classList.remove("hidden");
+  document.getElementById("accountLogged").classList.add("hidden");
+
+  checkSessionDisplay();
+}
+
+async function checkSessionDisplay() {
+  if (!supabaseClient) return;
+
+  const { data } = await supabaseClient.auth.getSession();
+
+  if (!data.session) return;
+
+  document.getElementById("accountForm").classList.add("hidden");
+  document.getElementById("accountLogged").classList.remove("hidden");
+
+  document.getElementById("accountEmail").textContent =
+    data.session.user.email || "";
+}
+
+function closeAccount() {
+  document.getElementById("accountModal").classList.add("hidden");
+}
+
+function setAuthMode(mode) {
+  authMode = mode;
+
+  document.getElementById("accountTitle").textContent =
+    mode === "signup" ? "Créer un compte" : "Connexion";
+
+  document.getElementById("accountSubmit").textContent =
+    mode === "signup" ? "CRÉER MON COMPTE" : "SE CONNECTER";
+
+  document.getElementById("accountSwitch").textContent =
+    mode === "signup"
+      ? "Déjà un compte ? Se connecter"
+      : "Pas encore de compte ? S'inscrire";
+
+  document.getElementById("accountMessage").textContent = "";
+}
+
+async function submitAuth(event) {
+  event.preventDefault();
+
+  if (!supabaseClient) {
+    return showAuthMessage("Connexion au service indisponible.");
+  }
+
+  const email = document.getElementById("accountEmailInput").value.trim();
+  const password = document.getElementById("accountPassword").value;
+
+  if (!email || password.length < 6) {
+    return showAuthMessage("Entre un email valide et un mot de passe d'au moins 6 caractères.");
+  }
+
+  const button = document.getElementById("accountSubmit");
+  button.disabled = true;
+
+  try {
+    if (authMode === "signup") {
+      const { data, error } = await supabaseClient.auth.signUp({
+        email,
+        password
+      });
+
+      if (error) throw error;
+
+      if (!data.session) {
+        showAuthMessage("Compte créé. Vérifie tes emails pour confirmer ton inscription.");
+      } else {
+        showAuthMessage("Compte créé avec succès.");
+      }
+
     } else {
-        updateFormMode();
-    }
-});
+      const { error } = await supabaseClient.auth.signInWithPassword({
+        email,
+        password
+      });
 
-closeAccount.addEventListener("click", () => {
-    accountModal.classList.add("hidden");
-});
+      if (error) throw error;
 
-accountModal.addEventListener("click", event => {
-    if (event.target === accountModal) {
-        accountModal.classList.add("hidden");
-    }
-});
-
-accountSwitch.addEventListener("click", () => {
-    signupMode = !signupMode;
-
-    accountPassword.value = "";
-
-    showAccountMessage("");
-    updateFormMode();
-});
-
-accountSubmit.addEventListener("click", async () => {
-    if (!supabaseClient) {
-        showAccountMessage(
-            "Le service de compte n'est pas disponible. Vérifie la configuration.",
-            true
-        );
-        return;
+      showAuthMessage("Connexion réussie.");
     }
 
-    const email = accountEmail.value.trim();
-    const password = accountPassword.value;
+  } catch (error) {
+    showAuthMessage(error.message || "Une erreur est survenue.");
 
-    if (!email || !accountEmail.checkValidity()) {
-        showAccountMessage(
-            "Entre une adresse e-mail valide.",
-            true
-        );
-        return;
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function logout() {
+  if (!supabaseClient) return;
+
+  const { error } = await supabaseClient.auth.signOut();
+
+  if (error) {
+    showAuthMessage(error.message);
+    return;
+  }
+
+  closeAccount();
+}
+
+function showAuthMessage(message) {
+  document.getElementById("accountMessage").textContent = message;
+}
+
+// Code propriétaire ZEYRO2
+
+async function redeemOwnerCode() {
+  const input = document.getElementById("ownerCodeInput");
+  const message = document.getElementById("ownerCodeMessage");
+  const code = input.value.trim();
+
+  if (!code) {
+    message.textContent = "Entre ton code propriétaire.";
+    return;
+  }
+
+  if (!supabaseClient) {
+    message.textContent = "Service indisponible.";
+    return;
+  }
+
+  const token = await window.getAccessToken();
+
+  if (!token) {
+    message.textContent = "Connecte-toi avant d'utiliser le code.";
+    return;
+  }
+
+  const button = document.getElementById("ownerCodeButton");
+  button.disabled = true;
+  message.textContent = "Vérification du code...";
+
+  try {
+    const response = await fetch("/api/owner/redeem", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token
+      },
+      body: JSON.stringify({ code })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Code invalide.");
     }
 
-    if (password.length < 8) {
-        showAccountMessage(
-            "Le mot de passe doit contenir au moins 8 caractères.",
-            true
-        );
-        return;
+    message.textContent = "Accès propriétaire activé.";
+
+    window.currentPlan = "owner";
+
+    if (window.renderPlan) {
+      window.renderPlan();
     }
 
-    accountSubmit.disabled = true;
-    accountSubmit.textContent = "PATIENTE...";
+  } catch (error) {
+    message.textContent = error.message;
 
-    try {
-        if (signupMode) {
-            const { data, error } =
-                await supabaseClient.auth.signUp({
-                    email,
-                    password,
-                    options: {
-                        emailRedirectTo: window.location.origin
-                    }
-                });
+  } finally {
+    button.disabled = false;
+  }
+}
 
-            if (error) throw error;
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("accountButton")
+    ?.addEventListener("click", openAccount);
 
-            if (data.session) {
-                updateAccountUI(data.user);
-                showAccountMessage(
-                    "Compte créé et connecté !"
-                );
-            } else {
-                showAccountMessage(
-                    "Compte créé. Vérifie ta boîte e-mail pour confirmer ton inscription."
-                );
-            }
-        } else {
-            const { data, error } =
-                await supabaseClient.auth.signInWithPassword({
-                    email,
-                    password
-                });
+  document.getElementById("accountClose")
+    ?.addEventListener("click", closeAccount);
 
-            if (error) throw error;
+  document.getElementById("accountForm")
+    ?.addEventListener("submit", submitAuth);
 
-            updateAccountUI(data.user);
+  document.getElementById("accountSwitch")
+    ?.addEventListener("click", () => {
+      setAuthMode(authMode === "login" ? "signup" : "login");
+    });
 
-            showAccountMessage("Connexion réussie !");
-        }
-    } catch (error) {
-        showAccountMessage(
-            error.message || "Une erreur est survenue.",
-            true
-        );
-    } finally {
-        accountSubmit.disabled = false;
-        updateFormMode();
-    }
-});
+  document.getElementById("logoutButton")
+    ?.addEventListener("click", logout);
 
-accountLogout.addEventListener("click", async () => {
-    if (!supabaseClient) return;
+  document.getElementById("ownerCodeButton")
+    ?.addEventListener("click", redeemOwnerCode);
 
-    accountLogout.disabled = true;
+  document.getElementById("ownerCodeInput")
+    ?.addEventListener("keydown", event => {
+      if (event.key === "Enter") redeemOwnerCode();
+    });
 
-    try {
-        const { error } =
-            await supabaseClient.auth.signOut();
-
-        if (error) throw error;
-
-        signupMode = false;
-        updateAccountUI(null);
-        updateFormMode();
-
-        showAccountMessage("Tu es déconnecté.");
-
-    } catch (error) {
-        showAccountMessage(
-            error.message || "Erreur de déconnexion.",
-            true
-        );
-    } finally {
-        accountLogout.disabled = false;
-    }
-});
-
-initializeAccount();
-const ownerCodeButton = document.getElementById("ownerCodeButton");
-
-ownerCodeButton.addEventListener("click", async () => {
-    const code = document.getElementById("ownerCodeInput").value.trim();
-    const message = document.getElementById("ownerCodeMessage");
-
-    if (!supabaseClient || !currentUser) {
-        message.textContent = "Connecte-toi à ton compte avant.";
-        return;
-    }
-
-    if (!code) {
-        message.textContent = "Entre ton code.";
-        return;
-    }
-
-    ownerCodeButton.disabled = true;
-    ownerCodeButton.textContent = "VÉRIFICATION...";
-
-    try {
-        const { data, error } =
-            await supabaseClient.auth.getSession();
-
-        if (error) throw error;
-
-        if (!data.session) {
-            throw new Error("Session expirée. Reconnecte-toi.");
-        }
-
-        const response = await fetch("/api/owner/redeem", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: "Bearer " + data.session.access_token
-            },
-            body: JSON.stringify({ code })
-        });
-
-        const result = await response.json();
-
-        if (!response.ok) {
-            throw new Error(result.error || "Code invalide.");
-        }
-
-        message.textContent = "OWNER activé avec succès !";
-        message.style.color = "#35e69a";
-
-        document.getElementById("ownerCodeInput").value = "";
-
-    } catch (error) {
-        message.textContent = error.message;
-        message.style.color = "#ff7777";
-    } finally {
-        ownerCodeButton.disabled = false;
-        ownerCodeButton.textContent = "ENVOYER";
-    }
+  initAuth();
 });
