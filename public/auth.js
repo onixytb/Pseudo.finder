@@ -1,10 +1,11 @@
 
+
 let supabaseClient = null;
 let authMode = "login";
 
 window.currentPlan = "free";
 
-const $ = id => document.getElementById(id);
+const $auth = id => document.getElementById(id);
 
 async function initAuth() {
   try {
@@ -21,30 +22,31 @@ async function initAuth() {
     );
 
     const { data, error } = await supabaseClient.auth.getSession();
+
     if (error) throw error;
 
     if (data.session) {
       await loadAccount(data.session);
     } else {
-      updateAccountButton(false);
+      showLoggedOut();
     }
 
     supabaseClient.auth.onAuthStateChange((event, session) => {
-      if (session) {
-        loadAccount(session);
-      } else {
-        window.currentPlan = "free";
-        updateAccountButton(false);
-        showLoggedOut();
+      Promise.resolve().then(async () => {
+        if (session) {
+          await loadAccount(session);
+        } else {
+          window.currentPlan = "free";
+          showLoggedOut();
 
-        if (window.renderPlan) window.renderPlan();
-      }
+          if (window.renderPlan) window.renderPlan();
+        }
+      });
     });
 
   } catch (error) {
-    console.error("Auth:", error);
-    updateAccountButton(false);
-    showAuthMessage("Impossible de connecter le service de compte.");
+    console.error("Initialisation Auth :", error);
+    showLoggedOut();
   }
 }
 
@@ -69,26 +71,44 @@ async function loadAccount(session) {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.error || "Impossible de charger le compte.");
+      throw new Error(data.error || "Chargement du compte impossible.");
     }
 
     window.currentPlan = data.plan || "free";
 
-    updateAccountButton(true, session.user.email);
     showLoggedIn(session.user.email);
 
     if (window.renderPlan) window.renderPlan();
 
   } catch (error) {
     console.error("Chargement du compte :", error);
-    showAuthMessage("Compte connecté, mais forfait impossible à charger.");
+    window.currentPlan = "free";
 
-    updateAccountButton(true, session.user.email);
+    if (window.renderPlan) window.renderPlan();
   }
 }
 
+function showLoggedOut() {
+  $auth("accountForm")?.classList.remove("hidden");
+  $auth("accountConnected")?.classList.add("hidden");
+
+  updateAccountButton(false);
+}
+
+function showLoggedIn(email) {
+  $auth("accountForm")?.classList.add("hidden");
+  $auth("accountConnected")?.classList.remove("hidden");
+
+  if ($auth("accountUserEmail")) {
+    $auth("accountUserEmail").textContent = email || "";
+  }
+
+  updateAccountButton(true, email);
+}
+
 function updateAccountButton(loggedIn, email = "") {
-  const button = $("accountButton");
+  const button = $auth("accountButton");
+
   if (!button) return;
 
   button.textContent = loggedIn ? "MON COMPTE" : "CONNEXION";
@@ -96,14 +116,17 @@ function updateAccountButton(loggedIn, email = "") {
 }
 
 function openAccount() {
-  $("accountModal")?.classList.remove("hidden");
-  $("accountMessage").textContent = "";
+  $auth("accountModal")?.classList.remove("hidden");
+
+  if ($auth("accountMessage")) {
+    $auth("accountMessage").textContent = "";
+  }
 
   checkSessionDisplay();
 }
 
 function closeAccount() {
-  $("accountModal")?.classList.add("hidden");
+  $auth("accountModal")?.classList.add("hidden");
 }
 
 async function checkSessionDisplay() {
@@ -118,43 +141,21 @@ async function checkSessionDisplay() {
   }
 }
 
-function showLoggedIn(email = "") {
-  $("accountForm")?.classList.add("hidden");
-  $("accountSwitch")?.classList.add("hidden");
-  $("accountConnected")?.classList.remove("hidden");
-
-  if ($("accountUserEmail")) {
-    $("accountUserEmail").textContent = email;
-  }
-
-  if ($("accountTitle")) {
-    $("accountTitle").textContent = "MON COMPTE";
-  }
-}
-
-function showLoggedOut() {
-  $("accountForm")?.classList.remove("hidden");
-  $("accountSwitch")?.classList.remove("hidden");
-  $("accountConnected")?.classList.add("hidden");
-  $("accountTitle").textContent =
-    authMode === "signup" ? "CRÉER UN COMPTE" : "CONNEXION";
-}
-
 function setAuthMode(mode) {
   authMode = mode;
 
-  $("accountTitle").textContent =
-    mode === "signup" ? "CRÉER UN COMPTE" : "CONNEXION";
+  $auth("accountTitle").textContent =
+    mode === "signup" ? "Créer un compte" : "Connexion";
 
-  $("accountSubmit").textContent =
+  $auth("accountSubmit").textContent =
     mode === "signup" ? "CRÉER MON COMPTE" : "SE CONNECTER";
 
-  $("accountSwitch").textContent =
+  $auth("accountSwitch").textContent =
     mode === "signup"
       ? "Déjà un compte ? Se connecter"
-      : "Pas encore de compte ? Créer un compte";
+      : "Pas encore de compte ? S'inscrire";
 
-  $("accountMessage").textContent = "";
+  $auth("accountMessage").textContent = "";
 }
 
 async function submitAuth(event) {
@@ -164,8 +165,8 @@ async function submitAuth(event) {
     return showAuthMessage("Service de connexion indisponible.");
   }
 
-  const email = $("accountEmail").value.trim();
-  const password = $("accountPassword").value;
+  const email = $auth("accountEmail").value.trim();
+  const password = $auth("accountPassword").value;
 
   if (!email || password.length < 8) {
     return showAuthMessage(
@@ -173,39 +174,43 @@ async function submitAuth(event) {
     );
   }
 
-  const button = $("accountSubmit");
+  const button = $auth("accountSubmit");
   button.disabled = true;
 
   try {
+    let result;
+
     if (authMode === "signup") {
-      const { data, error } = await supabaseClient.auth.signUp({
+      result = await supabaseClient.auth.signUp({
         email,
         password
       });
 
-      if (error) throw error;
+      if (result.error) throw result.error;
 
-      if (data.session) {
-        showAuthMessage("Compte créé avec succès !");
-        await loadAccount(data.session);
-      } else {
+      if (!result.data.session) {
         showAuthMessage(
           "Compte créé. Vérifie tes emails pour confirmer ton inscription."
         );
+        return;
       }
 
     } else {
-      const { data, error } =
-        await supabaseClient.auth.signInWithPassword({
-          email,
-          password
-        });
+      result = await supabaseClient.auth.signInWithPassword({
+        email,
+        password
+      });
 
-      if (error) throw error;
-
-      showAuthMessage("Connexion réussie !");
-      if (data.session) await loadAccount(data.session);
+      if (result.error) throw result.error;
     }
+
+    await loadAccount(result.data.session);
+
+    showAuthMessage(
+      authMode === "signup"
+        ? "Compte créé avec succès."
+        : "Connexion réussie."
+    );
 
   } catch (error) {
     showAuthMessage(error.message || "Une erreur est survenue.");
@@ -225,22 +230,24 @@ async function logout() {
     return;
   }
 
-  window.currentPlan = "free";
-  updateAccountButton(false);
-  showLoggedOut();
   closeAccount();
-
-  if (window.renderPlan) window.renderPlan();
 }
 
 function showAuthMessage(message) {
-  const element = $("accountMessage");
+  const element = $auth("accountMessage");
+
   if (element) element.textContent = message;
 }
 
+// ACTIVATION DU CODE PROPRIETAIRE
+
 async function redeemOwnerCode() {
-  const input = $("ownerCodeInput");
-  const message = $("ownerCodeMessage");
+  const input = $auth("ownerCodeInput");
+  const message = $auth("ownerCodeMessage");
+  const button = $auth("ownerCodeButton");
+
+  if (!input || !message || !button) return;
+
   const code = input.value.trim();
 
   if (!code) {
@@ -255,7 +262,6 @@ async function redeemOwnerCode() {
     return;
   }
 
-  const button = $("ownerCodeButton");
   button.disabled = true;
   message.textContent = "Vérification du code...";
 
@@ -275,16 +281,12 @@ async function redeemOwnerCode() {
       throw new Error(data.error || "Activation impossible.");
     }
 
-    window.currentPlan = "owner";
+    await loadAccount(
+      (await supabaseClient.auth.getSession()).data.session
+    );
+
     message.textContent = "Accès propriétaire activé !";
-
-    if (window.renderPlan) window.renderPlan();
-
-    const { data: sessionData } = await supabaseClient.auth.getSession();
-
-    if (sessionData.session) {
-      await loadAccount(sessionData.session);
-    }
+    input.value = "";
 
   } catch (error) {
     message.textContent = error.message;
@@ -294,26 +296,31 @@ async function redeemOwnerCode() {
   }
 }
 
+// BRANCHEMENT DES BOUTONS
+
 document.addEventListener("DOMContentLoaded", () => {
-  $("accountButton")?.addEventListener("click", openAccount);
-  $("closeAccount")?.addEventListener("click", closeAccount);
+  $auth("accountButton")?.addEventListener("click", openAccount);
+  $auth("closeAccount")?.addEventListener("click", closeAccount);
 
-  $("accountSubmit")?.addEventListener("click", submitAuth);
+  $auth("accountSubmit")?.addEventListener("click", submitAuth);
 
-  $("accountSwitch")?.addEventListener("click", () => {
+  $auth("accountPassword")?.addEventListener("keydown", event => {
+    if (event.key === "Enter") submitAuth(event);
+  });
+
+  $auth("accountSwitch")?.addEventListener("click", () => {
     setAuthMode(authMode === "login" ? "signup" : "login");
   });
 
-  $("accountLogout")?.addEventListener("click", logout);
+  $auth("accountLogout")?.addEventListener("click", logout);
 
-  $("ownerCodeButton")?.addEventListener("click", redeemOwnerCode);
+  $auth("ownerCodeButton")?.addEventListener("click", redeemOwnerCode);
 
-  $("ownerCodeInput")?.addEventListener("keydown", event => {
-    if (event.key === "Enter") redeemOwnerCode();
-  });
-
-  $("accountPassword")?.addEventListener("keydown", event => {
-    if (event.key === "Enter") submitAuth(event);
+  $auth("ownerCodeInput")?.addEventListener("keydown", event => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      redeemOwnerCode();
+    }
   });
 
   initAuth();
