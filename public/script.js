@@ -733,6 +733,7 @@ $("qrBtn").addEventListener("click", () => {
   addHistory("QR.GENERATOR", text.slice(0, 60), 1);
 });
 
+
 // IMAGE.METADATA : lecture locale uniquement
 
 $("imageFile").addEventListener("change", () => {
@@ -747,8 +748,31 @@ $("imageFile").addEventListener("change", () => {
     ["Nom", file.name],
     ["Type", file.type || "Inconnu"],
     ["Taille", (file.size / 1024).toFixed(1) + " Ko"],
-    ["Dernière modification", new Date(file.lastModified).toLocaleString("fr-FR")]
+    [
+      "Dernière modification",
+      new Date(file.lastModified).toLocaleString("fr-FR")
+    ]
   ];
+
+  function renderRows() {
+    out.innerHTML = "";
+
+    rows.forEach(([label, value]) => {
+      const row = document.createElement("div");
+      row.className = "metadata-row";
+
+      const title = document.createElement("strong");
+      title.textContent = label;
+
+      const content = document.createElement("span");
+      content.textContent = value;
+
+      row.append(title, content);
+      out.appendChild(row);
+    });
+
+    addHistory("IMAGE.METADATA", file.name, rows.length);
+  }
 
   if (file.type.startsWith("image/")) {
     const img = new Image();
@@ -770,6 +794,12 @@ $("imageFile").addEventListener("change", () => {
     };
 
     img.src = url;
+  } else {
+    renderRows();
   }
+});
 
-  fun
+// Initialisation de l'interface
+
+renderPlan();
+
